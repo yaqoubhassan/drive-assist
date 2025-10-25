@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, FormEvent } from 'react';
 import { router } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import {
-  Search,
   X,
   ChevronDown,
   AlertCircle,
@@ -106,17 +105,14 @@ export default function SearchFilters({
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 md:p-8 mb-12">
       <form onSubmit={handleSearch} className="space-y-6">
-        {/* FIXED: Search Input with properly aligned icon */}
+        {/* Search Input without icon */}
         <div className="relative">
-          <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-            <Search className="h-5 w-5 text-gray-400" />
-          </div>
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by symptoms, issue name, or keywords..."
-            className="block w-full pl-12 pr-12 py-3.5 bg-gray-50 dark:bg-gray-900/50 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base"
+            className="block w-full pl-4 pr-12 py-3.5 bg-gray-50 dark:bg-gray-900/50 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base"
           />
           {search && (
             <button
@@ -135,16 +131,7 @@ export default function SearchFilters({
             Filter by Category
           </label>
           <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => handleCategoryChange('')}
-              className={`px-4 py-2 rounded-lg font-medium transition-all text-sm md:text-base ${!currentCategory
-                ? 'bg-blue-600 text-white shadow-lg scale-105'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
-            >
-              All Issues
-            </button>
+
             {Object.entries(categories).map(([key, value]) => {
               const Icon = categoryIcons[key] || AlertCircle;
               return (

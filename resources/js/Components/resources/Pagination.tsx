@@ -20,7 +20,7 @@ export default function Pagination({ links, currentPage, lastPage }: PaginationP
   };
 
   return (
-    <div className="flex justify-center">
+    <div className="flex justify-center mb-8">
       <nav className="flex items-center space-x-2" aria-label="Pagination">
         {links.map((link, index) => {
           const isActive = link.active;
