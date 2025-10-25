@@ -15,6 +15,10 @@ Route::get('/experts', function () {
     return Inertia::render('Experts/Index');
 })->name('experts');
 
+Route::get('/resources', function () {
+    return Inertia::render('Resources/Index');
+})->name('resources');
+
 Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),

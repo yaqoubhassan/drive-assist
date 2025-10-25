@@ -12,9 +12,11 @@ export default function Footer() {
     ],
     resources: [
       { name: 'Road Signs', href: '/resources/road-signs' },
-      { name: 'Car Issues', href: '/resources/issues' },
+      { name: 'Car Issues', href: '/resources/car-issues' },
       { name: 'Maintenance', href: '/resources/maintenance' },
-      { name: 'Driving Tips', href: '/resources/tips' },
+      { name: 'Driving Tips', href: '/resources/driving-tips' },
+      { name: 'Electric Vehicles', href: '/resources/electric-vehicles' },
+      { name: 'E-Bikes', href: '/resources/e-bikes' },
     ],
     support: [
       { name: 'Help Center', href: '/help' },
