@@ -439,7 +439,7 @@ export default function CarIssueShow({ issue, relatedIssues }: Props) {
                         }`}
                     >
                       <ThumbsUp className="w-5 h-5" />
-                      <span>Yes, helpful</span>
+                      a
                     </button>
                     <button
                       onClick={() => handleHelpfulClick(false)}

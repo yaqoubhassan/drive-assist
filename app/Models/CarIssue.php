@@ -40,6 +40,17 @@ class CarIssue extends Model
     ];
 
     /**
+     * CRITICAL FIX: Append accessor attributes to JSON serialization
+     * This ensures cost_range, severity_color, and category_icon are included
+     * when the model is converted to an array or JSON
+     */
+    protected $appends = [
+        'cost_range',
+        'severity_color',
+        'category_icon',
+    ];
+
+    /**
      * Boot the model
      */
     protected static function boot()
@@ -129,6 +140,7 @@ class CarIssue extends Model
 
     /**
      * Get severity badge color
+     * ACCESSOR: Automatically available as $issue->severity_color
      */
     public function getSeverityColorAttribute(): string
     {
@@ -143,6 +155,7 @@ class CarIssue extends Model
 
     /**
      * Get category icon
+     * ACCESSOR: Automatically available as $issue->category_icon
      */
     public function getCategoryIconAttribute(): string
     {
@@ -163,6 +176,8 @@ class CarIssue extends Model
 
     /**
      * Format cost range
+     * ACCESSOR: Automatically available as $issue->cost_range
+     * This will now be included in JSON responses thanks to $appends
      */
     public function getCostRangeAttribute(): string
     {
