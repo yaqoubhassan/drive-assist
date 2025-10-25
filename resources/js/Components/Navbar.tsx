@@ -19,11 +19,28 @@ export default function Navbar() {
   }, []);
 
   const navLinks = [
-    { name: 'How It Works', href: '#how-it-works' },
-    { name: 'Features', href: '#features' },
-    { name: 'For Experts', href: '#experts' },
-    { name: 'Resources', href: '/resources' },
+    { name: 'How It Works', href: '/#how-it-works', isHash: true },
+    { name: 'Features', href: '/#features', isHash: true },
+    { name: 'For Experts', href: '/#experts', isHash: true },
+    { name: 'Resources', href: '/resources', isHash: false },
   ];
+
+  const handleHashLink = (e: React.MouseEvent<Element>, href: string) => {
+    // Check if we're on the homepage
+    const isHomePage = window.location.pathname === '/';
+
+    if (isHomePage) {
+      // We're on homepage, let default behavior work (scroll to anchor)
+      e.preventDefault();
+      const id = href.replace('/#', '');
+      const element = document.getElementById(id);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+        setMobileMenuOpen(false);
+      }
+    }
+    // If not on homepage, Link will handle navigation to /#anchor
+  };
 
   return (
     <motion.nav
@@ -56,6 +73,7 @@ export default function Navbar() {
               <Link
                 key={link.name}
                 href={link.href}
+                onClick={(e) => link.isHash && handleHashLink(e, link.href)}
                 className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium"
               >
                 {link.name}
@@ -104,8 +122,8 @@ export default function Navbar() {
                 <Link
                   key={link.name}
                   href={link.href}
+                  onClick={(e) => link.isHash && handleHashLink(e, link.href)}
                   className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                  onClick={() => setMobileMenuOpen(false)}
                 >
                   {link.name}
                 </Link>
