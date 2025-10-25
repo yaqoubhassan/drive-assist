@@ -74,7 +74,7 @@ export default function RoadSignShow({ sign, relatedSigns }: Props) {
                             <Eye className="w-4 h-4 mr-1" />
                             {sign.view_count} views
                           </span>
-                          <span className="px-3 py-1 bg-white/20 rounded-full">
+                          <span className="px-3 py-1 bg-white/20 rounded-full capitalize">
                             {sign.category}
                           </span>
                         </div>
@@ -82,134 +82,141 @@ export default function RoadSignShow({ sign, relatedSigns }: Props) {
                     </div>
                   </div>
 
-                  {/* Sign Image */}
-                  <div className="bg-gray-100 dark:bg-gray-700 p-12 flex items-center justify-center">
-                    <img
-                      src={sign.image_url}
-                      alt={sign.name}
-                      className="max-h-64 object-contain"
-                    />
+                  {/* Sign Emoji Display */}
+                  <div className="bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 p-12 flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="mb-4 inline-block p-8 bg-white dark:bg-gray-900 rounded-2xl shadow-lg">
+                        <span className="text-9xl">{sign.image_url}</span>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Content Sections */}
                   <div className="p-6 space-y-6">
                     {/* Description */}
                     <div>
-                      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
-                        <Info className="w-5 h-5 mr-2 text-blue-600" />
+                      <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-3 flex items-center">
+                        <Info className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" />
                         Description
                       </h2>
-                      <p className="text-gray-700 dark:text-gray-300">
+                      <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
                         {sign.description}
                       </p>
                     </div>
 
                     {/* Meaning */}
-                    <div>
-                      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
-                        <AlertCircle className="w-5 h-5 mr-2 text-yellow-600" />
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 rounded-lg p-4">
+                      <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-3 flex items-center">
+                        <AlertCircle className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" />
                         What It Means
                       </h2>
-                      <p className="text-gray-700 dark:text-gray-300">
+                      <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
                         {sign.meaning}
                       </p>
                     </div>
 
-                    {/* What to Do */}
-                    <div>
-                      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
-                        <CheckCircle className="w-5 h-5 mr-2 text-green-600" />
+                    {/* What To Do */}
+                    <div className="bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500 rounded-lg p-4">
+                      <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-3 flex items-center">
+                        <CheckCircle className="w-5 h-5 mr-2 text-green-600 dark:text-green-400" />
                         What You Should Do
                       </h2>
-                      <p className="text-gray-700 dark:text-gray-300">
+                      <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
                         {sign.what_to_do}
                       </p>
+                    </div>
+
+                    {/* Additional Info */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Shape</p>
+                        <p className="font-semibold text-gray-900 dark:text-white capitalize">
+                          {sign.shape}
+                        </p>
+                      </div>
+                      <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                          Color Scheme
+                        </p>
+                        <p className="font-semibold text-gray-900 dark:text-white capitalize">
+                          {sign.color_scheme.replace('-', ' & ')}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
               </div>
 
               {/* Sidebar */}
-              <div className="lg:col-span-1">
+              <div className="space-y-6">
+                {/* Category Badge */}
                 <motion.div
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
-                  className="space-y-6"
+                  className={`rounded-xl p-6 border-2 ${categoryColors[sign.category]}`}
                 >
-                  {/* Sign Details */}
-                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                      Sign Details
-                    </h3>
-                    <dl className="space-y-3">
-                      <div>
-                        <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                          Category
-                        </dt>
-                        <dd className="mt-1">
-                          <span
-                            className={`inline-block px-3 py-1 text-sm font-medium rounded-full ${categoryColors[sign.category]
-                              }`}
-                          >
-                            {sign.category}
-                          </span>
-                        </dd>
-                      </div>
-                      {sign.shape && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                            Shape
-                          </dt>
-                          <dd className="mt-1 text-gray-900 dark:text-white capitalize">
-                            {sign.shape}
-                          </dd>
-                        </div>
-                      )}
-                      {sign.color_scheme && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                            Colors
-                          </dt>
-                          <dd className="mt-1 text-gray-900 dark:text-white capitalize">
-                            {sign.color_scheme.replace('-', ' & ')}
-                          </dd>
-                        </div>
-                      )}
-                    </dl>
-                  </div>
+                  <h3 className="font-bold mb-2">Sign Category</h3>
+                  <p className="text-2xl font-bold capitalize">{sign.category}</p>
+                  <p className="text-sm mt-2 opacity-75">
+                    {sign.category === 'warning' && 'Warns of potential hazards ahead'}
+                    {sign.category === 'regulatory' && 'Laws and regulations you must follow'}
+                    {sign.category === 'information' && 'Helpful services and information'}
+                    {sign.category === 'guide' && 'Directional and route information'}
+                  </p>
+                </motion.div>
 
-                  {/* Related Signs */}
-                  {relatedSigns.length > 0 && (
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                        Related Signs
-                      </h3>
-                      <div className="space-y-3">
-                        {relatedSigns.map((relatedSign) => (
-                          <Link
-                            key={relatedSign.id}
-                            href={route('road-signs.show', relatedSign.slug)}
-                            className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                          >
-                            <img
-                              src={relatedSign.image_url}
-                              alt={relatedSign.name}
-                              className="w-12 h-12 object-contain"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                                {relatedSign.name}
-                              </p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                                {relatedSign.description}
-                              </p>
-                            </div>
-                          </Link>
-                        ))}
-                      </div>
+                {/* Related Signs */}
+                {relatedSigns.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6"
+                  >
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                      Related Signs
+                    </h3>
+                    <div className="space-y-3">
+                      {relatedSigns.map((relatedSign) => (
+                        <Link
+                          key={relatedSign.id}
+                          href={route('road-signs.show', relatedSign.slug)}
+                          className="flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors group"
+                        >
+                          <span className="text-3xl mr-3 group-hover:scale-110 transition-transform">
+                            {relatedSign.image_url}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-gray-900 dark:text-white text-sm group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                              {relatedSign.name}
+                            </p>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                              {relatedSign.description}
+                            </p>
+                          </div>
+                        </Link>
+                      ))}
                     </div>
-                  )}
+                  </motion.div>
+                )}
+
+                {/* Quick Actions */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl p-6 border border-blue-200 dark:border-blue-800"
+                >
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+                    Test Your Knowledge
+                  </h3>
+                  <Link
+                    href={route('road-signs.quiz.index')}
+                    className="block w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg text-center transition-colors"
+                  >
+                    Take Quiz
+                  </Link>
                 </motion.div>
               </div>
             </div>

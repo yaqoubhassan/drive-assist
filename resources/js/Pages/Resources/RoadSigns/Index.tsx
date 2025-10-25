@@ -50,16 +50,6 @@ export default function RoadSignsIndex({
     });
   };
 
-  const getCategoryColor = (category: string) => {
-    const colors: Record<string, string> = {
-      warning: 'yellow',
-      regulatory: 'red',
-      information: 'blue',
-      guide: 'green',
-    };
-    return colors[category] || 'gray';
-  };
-
   return (
     <ThemeProvider>
       <Head title="Road Signs Guide - DriveAssist" />
@@ -118,14 +108,14 @@ export default function RoadSignsIndex({
                     <Link
                       key={sign.id}
                       href={route('road-signs.show', sign.slug)}
-                      className="bg-white dark:bg-gray-800 rounded-lg p-4 hover:shadow-lg transition-shadow"
+                      className="bg-white dark:bg-gray-800 rounded-lg p-4 hover:shadow-lg transition-shadow group"
                     >
-                      <img
-                        src={sign.image_url}
-                        alt={sign.name}
-                        className="w-full h-24 object-contain mb-2"
-                      />
-                      <p className="text-sm font-medium text-gray-900 dark:text-white text-center">
+                      <div className="flex items-center justify-center h-24 mb-2">
+                        <span className="text-5xl group-hover:scale-110 transition-transform">
+                          {sign.image_url}
+                        </span>
+                      </div>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white text-center line-clamp-2">
                         {sign.name}
                       </p>
                     </Link>
@@ -164,8 +154,8 @@ export default function RoadSignsIndex({
                       key={key}
                       onClick={() => handleCategoryChange(key)}
                       className={`px-4 py-2 rounded-lg font-medium transition-colors ${currentCategory === key
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                         }`}
                     >
                       {label}
@@ -193,8 +183,8 @@ export default function RoadSignsIndex({
                         href={link.url || '#'}
                         preserveState
                         className={`px-4 py-2 rounded-lg ${link.active
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                           } ${!link.url && 'opacity-50 cursor-not-allowed'}`}
                         dangerouslySetInnerHTML={{ __html: link.label }}
                       />
@@ -213,8 +203,8 @@ export default function RoadSignsIndex({
         </main>
 
         <Footer />
-      </div >
-    </ThemeProvider >
+      </div>
+    </ThemeProvider>
   );
 }
 
@@ -234,13 +224,11 @@ function SignCard({ sign, index }: { sign: RoadSign; index: number }) {
     >
       <Link href={route('road-signs.show', sign.slug)}>
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-all duration-200 overflow-hidden h-full group">
-          {/* Image Container */}
+          {/* Emoji Icon Container */}
           <div className="bg-gray-50 dark:bg-gray-700 p-6 flex items-center justify-center h-48">
-            <img
-              src={sign.image_url}
-              alt={sign.name}
-              className="max-h-full max-w-full object-contain group-hover:scale-110 transition-transform duration-200"
-            />
+            <span className="text-8xl group-hover:scale-110 transition-transform duration-200">
+              {sign.image_url}
+            </span>
           </div>
 
           {/* Content */}
