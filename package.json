@@ -1,0 +1,38 @@
+{
+    "$schema": "https://json.schemastore.org/package.json",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "vite build",
+        "dev": "vite"
+    },
+    "devDependencies": {
+        "@tailwindcss/vite": "^4.0.0",
+        "@types/react": "^19.2.2",
+        "@types/react-dom": "^19.2.2",
+        "@vitejs/plugin-react": "^5.1.0",
+        "autoprefixer": "^10.4.21",
+        "axios": "^1.11.0",
+        "concurrently": "^9.0.1",
+        "laravel-vite-plugin": "^2.0.0",
+        "postcss": "^8.5.6",
+        "tailwindcss": "^4.1.16",
+        "typescript": "^5.9.3",
+        "vite": "^7.0.7"
+    },
+    "dependencies": {
+        "@inertiajs/react": "^2.2.11",
+        "react": "^19.2.0",
+        "react-dom": "^19.2.0"
+    },
+    "name": "auto-fix-hub",
+    "version": "1.0.0",
+    "description": "<p align=\"center\"><a href=\"https://laravel.com\" target=\"_blank\"><img src=\"https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg\" width=\"400\" alt=\"Laravel Logo\"></a></p>",
+    "main": "vite.config.js",
+    "directories": {
+        "test": "tests"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC"
+}
