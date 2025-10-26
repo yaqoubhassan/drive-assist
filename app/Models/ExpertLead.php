@@ -81,6 +81,14 @@ class ExpertLead extends Model
     }
 
     /**
+     * Scope for leads by status
+     */
+    public function scopeByStatus($query, $status)
+    {
+        return $query->where('status', $status);
+    }
+
+    /**
      * Scope a query to only include active leads.
      */
     public function scopeActive($query)

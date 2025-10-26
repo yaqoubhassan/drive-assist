@@ -75,6 +75,45 @@ class Review extends Model
     }
 
     /**
+     * Check if expert has responded
+     */
+    public function hasResponse()
+    {
+        return !is_null($this->expert_response);
+    }
+
+    /**
+     * Get average rating
+     */
+    public function getAverageRatingAttribute()
+    {
+        $ratings = array_filter([
+            $this->quality_rating,
+            $this->professionalism_rating,
+            $this->pricing_rating,
+            $this->communication_rating,
+        ]);
+
+        return count($ratings) > 0 ? round(array_sum($ratings) / count($ratings), 1) : $this->overall_rating;
+    }
+
+    /**
+     * Scope for reviews with responses
+     */
+    public function scopeWithResponse($query)
+    {
+        return $query->whereNotNull('expert_response');
+    }
+
+    /**
+     * Scope for high-rated reviews
+     */
+    public function scopeHighRated($query, $minRating = 4)
+    {
+        return $query->where('overall_rating', '>=', $minRating);
+    }
+
+    /**
      * Scope a query to only include verified purchase reviews.
      */
     public function scopeVerified($query)

@@ -106,6 +106,22 @@ class Job extends Model
     }
 
     /**
+     * Scope for scheduled jobs
+     */
+    public function scopeScheduled($query)
+    {
+        return $query->where('job_status', 'scheduled');
+    }
+
+    /**
+     * Scope for in progress jobs
+     */
+    public function scopeInProgress($query)
+    {
+        return $query->where('job_status', 'in_progress');
+    }
+
+    /**
      * Scope a query to only include active jobs.
      */
     public function scopeActive($query)
