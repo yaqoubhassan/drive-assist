@@ -330,7 +330,7 @@ function ContentSection({ step, colors, Icon, alignRight = false }: any) {
       </p>
 
       {/* Features */}
-      <div className="space-y-3">
+      <div className="space-y-3 mb-3">
         {step.features.map((feature: any) => {
           const FeatureIcon = feature.icon;
           return (

@@ -3,9 +3,21 @@
 use App\Http\Controllers\CarIssueController;
 use App\Http\Controllers\ExpertContactController;
 use App\Http\Controllers\ExpertController;
+use App\Http\Controllers\FluidGuideController;
+use App\Http\Controllers\MaintenanceController;
+use App\Http\Controllers\MaintenanceGuideController;
+use App\Http\Controllers\MaintenanceScheduleController;
 use App\Http\Controllers\RoadSignController;
+use App\Http\Controllers\SeasonalChecklistController;
+use App\Http\Controllers\WarningLightController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+
+
+
+
+
+
 
 
 
@@ -41,6 +53,70 @@ Route::prefix('resources/car-issues')->name('car-issues.')->group(function () {
     Route::get('/', [CarIssueController::class, 'index'])->name('index');
     Route::get('/{slug}', [CarIssueController::class, 'show'])->name('show');
     Route::post('/{issue}/helpful', [CarIssueController::class, 'markHelpful'])->name('helpful');
+});
+
+// Maintenance Resources Hub
+Route::get('/resources/maintenance', [MaintenanceController::class, 'index'])
+    ->name('maintenance.index');
+
+// Maintenance Guides
+Route::prefix('resources/maintenance/guides')->group(function () {
+    Route::get('/', [MaintenanceGuideController::class, 'index'])
+        ->name('maintenance.guides.index');
+
+    Route::get('/{slug}', [MaintenanceGuideController::class, 'show'])
+        ->name('maintenance.guides.show');
+
+    Route::post('/{slug}/feedback', [MaintenanceGuideController::class, 'feedback'])
+        ->name('maintenance.guides.feedback');
+});
+
+// Maintenance Schedules
+Route::prefix('resources/maintenance/schedules')->group(function () {
+    Route::get('/', [MaintenanceScheduleController::class, 'index'])
+        ->name('maintenance.schedules.index');
+
+    Route::get('/{slug}', [MaintenanceScheduleController::class, 'show'])
+        ->name('maintenance.schedules.show');
+
+    Route::post('/{slug}/feedback', [MaintenanceScheduleController::class, 'feedback'])
+        ->name('maintenance.schedules.feedback');
+});
+
+// Fluid Guides
+Route::prefix('resources/maintenance/fluids')->group(function () {
+    Route::get('/', [FluidGuideController::class, 'index'])
+        ->name('maintenance.fluids.index');
+
+    Route::get('/{slug}', [FluidGuideController::class, 'show'])
+        ->name('maintenance.fluids.show');
+
+    Route::post('/{slug}/feedback', [FluidGuideController::class, 'feedback'])
+        ->name('maintenance.fluids.feedback');
+});
+
+// Warning Lights
+Route::prefix('resources/maintenance/warning-lights')->group(function () {
+    Route::get('/', [WarningLightController::class, 'index'])
+        ->name('maintenance.warning-lights.index');
+
+    Route::get('/{slug}', [WarningLightController::class, 'show'])
+        ->name('maintenance.warning-lights.show');
+
+    Route::post('/{slug}/feedback', [WarningLightController::class, 'feedback'])
+        ->name('maintenance.warning-lights.feedback');
+});
+
+// Seasonal Checklists
+Route::prefix('resources/maintenance/seasonal')->group(function () {
+    Route::get('/', [SeasonalChecklistController::class, 'index'])
+        ->name('maintenance.seasonal.index');
+
+    Route::get('/{slug}', [SeasonalChecklistController::class, 'show'])
+        ->name('maintenance.seasonal.show');
+
+    Route::post('/{slug}/feedback', [SeasonalChecklistController::class, 'feedback'])
+        ->name('maintenance.seasonal.feedback');
 });
 
 // Expert profile routes
