@@ -102,10 +102,15 @@ export default function SearchFilters({
   const currentSortLabel =
     sortOptions.find((opt) => opt.value === currentSort)?.label || 'Most Popular';
 
+  // Safely get category entries
+  const categoryEntries = categories && typeof categories === 'object'
+    ? Object.entries(categories)
+    : [];
+
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 md:p-8 mb-12">
       <form onSubmit={handleSearch} className="space-y-6">
-        {/* Search Input without icon */}
+        {/* Search Input */}
         <div className="relative">
           <input
             type="text"
@@ -125,31 +130,37 @@ export default function SearchFilters({
           )}
         </div>
 
-        {/* Category Pills */}
+        {/* Category Pills - Always render, just show message if empty */}
         <div>
           <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
             Filter by Category
           </label>
-          <div className="flex flex-wrap gap-2">
 
-            {Object.entries(categories).map(([key, value]) => {
-              const Icon = categoryIcons[key] || AlertCircle;
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => handleCategoryChange(key)}
-                  className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center space-x-2 text-sm md:text-base ${currentCategory === key
-                    ? 'bg-blue-600 text-white shadow-lg scale-105'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                    }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span>{value}</span>
-                </button>
-              );
-            })}
-          </div>
+          {categoryEntries.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {categoryEntries.map(([key, value]) => {
+                const Icon = categoryIcons[key] || AlertCircle;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => handleCategoryChange(key)}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center space-x-2 text-sm md:text-base ${currentCategory === key
+                      ? 'bg-blue-600 text-white shadow-lg scale-105'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span>{value}</span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-sm text-gray-500 dark:text-gray-400 italic">
+              Loading categories...
+            </div>
+          )}
         </div>
 
         {/* Sort and Clear Filters */}
@@ -163,7 +174,8 @@ export default function SearchFilters({
               <span className="text-sm">Sort by:</span>
               <span className="font-semibold">{currentSortLabel}</span>
               <ChevronDown
-                className={`w-4 h-4 transition-transform ${showSortMenu ? 'rotate-180' : ''}`}
+                className={`w-4 h-4 transition-transform ${showSortMenu ? 'rotate-180' : ''
+                  }`}
               />
             </button>
 
@@ -193,7 +205,7 @@ export default function SearchFilters({
           </div>
 
           {/* Clear Filters Button */}
-          {(search || currentCategory) && (
+          {(search || (currentCategory && currentCategory !== 'all')) && (
             <button
               type="button"
               onClick={clearFilters}

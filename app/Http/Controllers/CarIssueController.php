@@ -5,76 +5,87 @@ namespace App\Http\Controllers;
 use App\Models\CarIssue;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Inertia\Response;
 
 class CarIssueController extends Controller
 {
     /**
      * Display a listing of car issues
      */
-    public function index(Request $request): Response
+    public function index(Request $request)
     {
-        $category = $request->input('category', 'all');
-        $search = $request->input('search', '');
-        $sort = $request->input('sort', 'popular'); // popular, recent, title
-
         $query = CarIssue::published();
 
-        // Apply filters
-        if ($category !== 'all') {
-            $query->category($category);
+        // Search
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhere('symptoms', 'like', "%{$search}%");
+            });
         }
 
-        if ($search) {
-            $query->search($search);
+        // Category filter
+        if ($request->filled('category')) {
+            $query->where('category', $request->input('category'));
         }
 
-        // Apply sorting
-        $query = match ($sort) {
-            'recent' => $query->latest(),
-            'title' => $query->orderBy('title'),
-            'views' => $query->orderByDesc('view_count'),
-            default => $query->popular(),
-        };
+        // Severity filter
+        if ($request->filled('severity')) {
+            $query->where('severity', $request->input('severity'));
+        }
+
+        // Sorting
+        $sortBy = $request->input('sort', 'popular');
+        switch ($sortBy) {
+            case 'newest':
+                $query->orderByDesc('created_at');
+                break;
+            case 'views':
+                $query->orderByDesc('view_count');
+                break;
+            case 'helpful':
+                $query->orderByDesc('helpful_count');
+                break;
+            case 'popular':
+            default:
+                $query->orderByDesc('is_popular')
+                    ->orderByDesc('view_count');
+                break;
+        }
 
         $issues = $query->paginate(12)->withQueryString();
 
         // Get popular issues for sidebar
         $popularIssues = CarIssue::published()
-            ->popular()
+            ->where('is_popular', true)
+            ->orderByDesc('view_count')
             ->take(5)
             ->get();
 
-        // Get categories with counts
-        $categories = [
-            'all' => 'All Issues',
-            'engine' => 'Engine',
-            'brakes' => 'Brakes',
-            'electrical' => 'Electrical',
-            'transmission' => 'Transmission',
-            'tires' => 'Tires & Wheels',
-            'suspension' => 'Suspension',
-            'cooling' => 'Cooling System',
-            'fuel' => 'Fuel System',
-            'exhaust' => 'Exhaust',
-            'steering' => 'Steering',
-            'other' => 'Other',
-        ];
+        // Get category counts
+        $categoryStats = CarIssue::published()
+            ->selectRaw('category, count(*) as count')
+            ->groupBy('category')
+            ->pluck('count', 'category');
 
         return Inertia::render('Resources/CarIssues/Index', [
             'issues' => $issues,
             'popularIssues' => $popularIssues,
-            'categories' => $categories,
-            'currentCategory' => $category,
-            'searchQuery' => $search,
-            'currentSort' => $sort,
+            'categoryStats' => $categoryStats,
+            'filters' => [
+                'search' => $request->input('search'),
+                'category' => $request->input('category'),
+                'severity' => $request->input('severity'),
+                'sort' => $sortBy,
+            ],
         ]);
     }
 
     /**
      * Display the specified car issue
      */
-    public function show(string $slug): Response
+    public function show(string $slug)
     {
         $issue = CarIssue::where('slug', $slug)
             ->where('is_published', true)
@@ -104,15 +115,25 @@ class CarIssueController extends Controller
     }
 
     /**
-     * Mark an issue as helpful
+     * Mark an issue as helpful or not helpful
      */
-    public function markHelpful(CarIssue $issue): \Illuminate\Http\JsonResponse
+    public function markHelpful(CarIssue $issue, Request $request): \Illuminate\Http\JsonResponse
     {
-        $issue->incrementHelpful();
+        $validated = $request->validate([
+            'helpful' => 'required|boolean',
+        ]);
+
+        if ($validated['helpful']) {
+            $issue->incrementHelpful();
+        } else {
+            $issue->incrementNotHelpful();
+        }
 
         return response()->json([
             'success' => true,
             'helpful_count' => $issue->helpful_count,
+            'not_helpful_count' => $issue->not_helpful_count,
+            'message' => 'Thank you for your feedback!',
         ]);
     }
 }
