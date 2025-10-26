@@ -69,6 +69,7 @@ export default function HowItWorks() {
 
   return (
     <section
+      id="how-it-works"
       ref={ref}
       className="relative py-20 lg:py-32 bg-white dark:bg-gray-900 overflow-hidden"
     >
