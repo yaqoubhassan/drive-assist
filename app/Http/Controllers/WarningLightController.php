@@ -52,7 +52,7 @@ class WarningLightController extends Controller
         $lights = $query->paginate(12)->withQueryString();
 
         return Inertia::render('Resources/Maintenance/WarningLights/Index', [
-            'lights' => $lights,
+            'warningLights' => $lights,
             'severities' => $this->getSeverities(),
             'colors' => $this->getColors(),
             'currentSeverity' => $request->get('severity', 'all'),
@@ -82,7 +82,7 @@ class WarningLightController extends Controller
             ->get();
 
         return Inertia::render('Resources/Maintenance/WarningLights/Show', [
-            'light' => $light,
+            'warningLight' => $light,
             'relatedLights' => $relatedLights,
         ]);
     }
