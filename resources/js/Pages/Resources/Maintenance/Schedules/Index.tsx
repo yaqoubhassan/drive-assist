@@ -162,7 +162,7 @@ export default function SchedulesIndex({
                   <select
                     value={currentSort}
                     onChange={(e) => handleSortChange(e.target.value)}
-                    className="px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white"
+                    className="pl-6 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white"
                   >
                     {Object.entries(sortOptions).map(([key, value]) => (
                       <option key={key} value={key}>
@@ -188,7 +188,7 @@ export default function SchedulesIndex({
               <>
                 <div className="mb-6">
                   <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
-                    {currentInterval
+                    {currentInterval !== 'all'
                       ? `${intervals[currentInterval as keyof typeof intervals]} Schedules`
                       : 'All Schedules'}
                     {searchQuery && ` matching "${searchQuery}"`}

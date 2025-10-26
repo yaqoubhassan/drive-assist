@@ -35,6 +35,17 @@ const priorityConfig = {
 export default function MaintenanceScheduleCard({ schedule, index }: MaintenanceScheduleCardProps) {
   const config = priorityConfig[schedule.priority];
 
+  // Defensive: Ensure tasks is always an array
+  const tasks = Array.isArray(schedule.tasks) ? schedule.tasks : [];
+  const hasValidTasks = tasks.length > 0;
+
+  // Helper to safely extract task text
+  const getTaskText = (task: any): string => {
+    if (typeof task === 'string') return task;
+    if (task && typeof task === 'object' && task.task) return task.task;
+    return 'Task';
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -80,19 +91,25 @@ export default function MaintenanceScheduleCard({ schedule, index }: Maintenance
             <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">
               Key Tasks:
             </p>
-            <ul className="space-y-1">
-              {schedule.tasks.slice(0, 3).map((task, idx) => (
-                <li key={idx} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
-                  <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-                  <span className="line-clamp-1">{task}</span>
-                </li>
-              ))}
-              {schedule.tasks.length > 3 && (
-                <li className="text-xs text-gray-500 dark:text-gray-400 ml-6">
-                  +{schedule.tasks.length - 3} more tasks
-                </li>
-              )}
-            </ul>
+            {hasValidTasks ? (
+              <ul className="space-y-1">
+                {tasks.slice(0, 3).map((task, idx) => (
+                  <li key={idx} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                    <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                    <span className="line-clamp-1">{getTaskText(task)}</span>
+                  </li>
+                ))}
+                {tasks.length > 3 && (
+                  <li className="text-xs text-gray-500 dark:text-gray-400 ml-6">
+                    +{tasks.length - 3} more tasks
+                  </li>
+                )}
+              </ul>
+            ) : (
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Click to view schedule details
+              </p>
+            )}
           </div>
 
           {/* Meta Info */}

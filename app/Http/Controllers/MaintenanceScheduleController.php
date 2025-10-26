@@ -26,7 +26,7 @@ class MaintenanceScheduleController extends Controller
         $sortBy = $request->get('sort', 'interval');
         if ($sortBy === 'interval') {
             $query->orderByRaw("
-                CASE interval
+                CASE 'interval'
                     WHEN 'daily' THEN 1
                     WHEN 'weekly' THEN 2
                     WHEN 'monthly' THEN 3

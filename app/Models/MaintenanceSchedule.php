@@ -47,13 +47,45 @@ class MaintenanceSchedule extends Model
         });
     }
 
+    /**
+     * Ensure tasks is always an array
+     * This accessor ensures that even if the database returns a string,
+     * it will be properly converted to an array
+     */
+    public function getTasksAttribute($value)
+    {
+        // If null, return empty array
+        if (is_null($value)) {
+            return [];
+        }
+
+        // If already an array (from casting), return it
+        if (is_array($value)) {
+            return $value;
+        }
+
+        // If string, try to decode JSON
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+            return is_array($decoded) ? $decoded : [];
+        }
+
+        // Fallback to empty array
+        return [];
+    }
+
     public function scopePublished($query)
     {
         return $query->where('is_published', true);
     }
 
+    /**
+     * Scope to filter by interval
+     * NOTE: Do NOT add manual backticks here - Laravel's query builder handles reserved keywords automatically
+     */
     public function scopeByInterval($query, $interval)
     {
+        // Let Laravel handle the escaping of the reserved keyword 'interval'
         return $query->where('interval', $interval);
     }
 
