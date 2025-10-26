@@ -1,9 +1,13 @@
 <?php
 
 use App\Http\Controllers\CarIssueController;
+use App\Http\Controllers\ExpertContactController;
+use App\Http\Controllers\ExpertController;
 use App\Http\Controllers\RoadSignController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+
+
 
 
 
@@ -38,6 +42,17 @@ Route::prefix('resources/car-issues')->name('car-issues.')->group(function () {
     Route::get('/{slug}', [CarIssueController::class, 'show'])->name('show');
     Route::post('/{issue}/helpful', [CarIssueController::class, 'markHelpful'])->name('helpful');
 });
+
+// Expert profile routes
+Route::get('/experts/{expert}', [ExpertController::class, 'show'])
+    ->name('experts.show');
+
+// Expert contact routes
+Route::get('/experts/{expert}/contact', [ExpertContactController::class, 'create'])
+    ->name('experts.contact.create');
+
+Route::post('/experts/{expert}/contact', [ExpertContactController::class, 'store'])
+    ->name('experts.contact.store');
 
 Route::middleware([
     'auth:sanctum',

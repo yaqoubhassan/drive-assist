@@ -142,7 +142,7 @@ export default function InteractiveMapDemo({ className = '' }: InteractiveMapDem
 
     return {
       x: Math.max(10, Math.min(90, x)), // Clamp to visible area
-      y: Math.max(10, Math.min(85, y)), // Leave room for card at bottom
+      y: Math.max(15, Math.min(80, y)), // Leave room for card at bottom and stats at top
     };
   };
 
@@ -165,7 +165,7 @@ export default function InteractiveMapDemo({ className = '' }: InteractiveMapDem
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
-        className="relative w-full h-[500px] md:h-[600px] rounded-2xl overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-700"
+        className="relative w-full h-[400px] sm:h-[500px] md:h-[600px] rounded-2xl overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-700"
       >
         {/* Map Background */}
         <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-indigo-950 dark:to-purple-950">
@@ -227,11 +227,11 @@ export default function InteractiveMapDemo({ className = '' }: InteractiveMapDem
                 }}
               />
               {/* User pin */}
-              <div className="w-8 h-8 bg-green-500 rounded-full border-4 border-white dark:border-gray-800 shadow-lg flex items-center justify-center">
-                <div className="w-3 h-3 bg-white rounded-full" />
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-green-500 rounded-full border-4 border-white dark:border-gray-800 shadow-lg flex items-center justify-center">
+                <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-white rounded-full" />
               </div>
             </div>
-            <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 whitespace-nowrap">
+            <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 whitespace-nowrap hidden sm:block">
               <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 px-2 py-1 rounded-md shadow-sm">
                 You are here
               </span>
@@ -242,6 +242,7 @@ export default function InteractiveMapDemo({ className = '' }: InteractiveMapDem
         {/* Expert Pins */}
         {DEMO_EXPERTS.map((expert, index) => {
           const position = calculatePosition(expert.lat, expert.lng);
+
           return (
             <div
               key={expert.id}
@@ -276,20 +277,20 @@ export default function InteractiveMapDemo({ className = '' }: InteractiveMapDem
           )}
         </AnimatePresence>
 
-        {/* Stats Overlay - Top */}
+        {/* Stats Overlay - Top - Mobile Responsive */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="absolute top-4 left-4 right-4 flex justify-between items-start gap-4 pointer-events-none"
+          className="absolute top-2 sm:top-4 left-2 sm:left-4 right-2 sm:right-4 flex flex-col xs:flex-row justify-between items-start xs:items-center gap-2 sm:gap-4 pointer-events-none z-10"
         >
-          <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg px-4 py-2 shadow-lg">
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Experts Nearby</p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{DEMO_EXPERTS.length}</p>
+          <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-lg px-3 py-1.5 sm:px-4 sm:py-2 shadow-lg">
+            <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mb-0.5">Experts Nearby</p>
+            <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{DEMO_EXPERTS.length}</p>
           </div>
-          <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg px-4 py-2 shadow-lg">
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Avg. Response</p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">&lt;2min</p>
+          <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-lg px-3 py-1.5 sm:px-4 sm:py-2 shadow-lg">
+            <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mb-0.5">Avg. Response</p>
+            <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">&lt;2min</p>
           </div>
         </motion.div>
 
@@ -301,15 +302,15 @@ export default function InteractiveMapDemo({ className = '' }: InteractiveMapDem
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
               transition={{ delay: 1 }}
-              className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10"
+              className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-10 w-full max-w-[calc(100%-2rem)] sm:max-w-none sm:w-auto"
             >
               <Link
                 href="/experts"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
+                className="inline-flex items-center justify-center gap-2 w-auto px-6 sm:px-8 py-3 sm:py-3.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 dark:bg-blue-500 dark:hover:bg-blue-600 dark:active:bg-blue-700 text-white text-sm sm:text-base font-semibold rounded-lg sm:rounded-xl shadow-lg hover:shadow-xl active:shadow-md transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0"
               >
-                <span>View All Experts</span>
+                <span className="whitespace-nowrap">View All Experts</span>
                 <svg
-                  className="w-5 h-5"
+                  className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -326,27 +327,28 @@ export default function InteractiveMapDemo({ className = '' }: InteractiveMapDem
           )}
         </AnimatePresence>
 
-        {/* Instructions Tooltip - Shows initially then fades */}
+        {/* Instructions Tooltip - Mobile Responsive */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 2 }}
-          className="absolute top-20 left-1/2 -translate-x-1/2 pointer-events-none"
+          className="absolute top-16 sm:top-20 left-1/2 -translate-x-1/2 pointer-events-none px-4 max-w-xs sm:max-w-none"
         >
           <motion.div
             animate={{ opacity: [1, 0] }}
             transition={{ delay: 4, duration: 1 }}
-            className="bg-gray-900 dark:bg-gray-800 text-white text-sm px-4 py-2 rounded-lg shadow-lg"
+            className="bg-gray-900 dark:bg-gray-800 text-white text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg shadow-lg text-center"
           >
-            👆 Click on any expert to see details
+            <span className="hidden sm:inline">👆 Click on any expert to see details</span>
+            <span className="sm:hidden">👆 Tap on any pin</span>
           </motion.div>
         </motion.div>
       </motion.div>
 
       {/* Mobile-only note */}
-      <div className="md:hidden mt-4 text-center">
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          💡 Tap on pins to view expert details
+      <div className="sm:hidden mt-3 text-center">
+        <p className="text-xs text-gray-600 dark:text-gray-400">
+          💡 Tap on map pins to view expert details
         </p>
       </div>
     </div>
