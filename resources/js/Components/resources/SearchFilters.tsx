@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, FormEvent } from 'react';
 import { router } from '@inertiajs/react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
   ChevronDown,
@@ -38,7 +38,7 @@ const categoryIcons: Record<string, any> = {
 
 const sortOptions = [
   { value: 'popular', label: 'Most Popular' },
-  { value: 'recent', label: 'Most Recent' },
+  { value: 'recent', label: 'Most Recent' }, // Fixed: changed from 'newest' to 'recent'
   { value: 'helpful', label: 'Most Helpful' },
   { value: 'views', label: 'Most Viewed' },
 ];
@@ -53,6 +53,13 @@ export default function SearchFilters({
   const [search, setSearch] = useState(searchQuery);
   const [showSortMenu, setShowSortMenu] = useState(false);
   const sortMenuRef = useRef<HTMLDivElement>(null);
+
+  // Debug: Log categories to console
+  useEffect(() => {
+    console.log('SearchFilters - categories:', categories);
+    console.log('SearchFilters - currentCategory:', currentCategory);
+    console.log('SearchFilters - currentSort:', currentSort);
+  }, [categories, currentCategory, currentSort]);
 
   // Close sort menu when clicking outside
   useEffect(() => {
@@ -72,24 +79,38 @@ export default function SearchFilters({
     e.preventDefault();
     router.get(
       route('car-issues.index'),
-      { search, category: currentCategory, sort: currentSort },
+      {
+        search,
+        category: currentCategory || undefined, // Don't send empty string
+        sort: currentSort
+      },
       { preserveState: true }
     );
   };
 
   const handleCategoryChange = (category: string) => {
+    console.log('Category changed to:', category);
     router.get(
       route('car-issues.index'),
-      { category, search, sort: currentSort },
+      {
+        category,
+        search: search || undefined, // Don't send empty string
+        sort: currentSort
+      },
       { preserveState: true }
     );
   };
 
   const handleSortChange = (sort: string) => {
+    console.log('Sort changed to:', sort);
     setShowSortMenu(false);
     router.get(
       route('car-issues.index'),
-      { sort, category: currentCategory, search },
+      {
+        sort,
+        category: currentCategory || undefined,
+        search: search || undefined
+      },
       { preserveState: true }
     );
   };
@@ -99,13 +120,19 @@ export default function SearchFilters({
     router.get(route('car-issues.index'));
   };
 
+  // Get the current sort label
   const currentSortLabel =
     sortOptions.find((opt) => opt.value === currentSort)?.label || 'Most Popular';
 
-  // Safely get category entries
+  // Safely get category entries - ensure categories is an object
   const categoryEntries = categories && typeof categories === 'object'
     ? Object.entries(categories)
     : [];
+
+  // Debug: Log category entries
+  useEffect(() => {
+    console.log('Category entries:', categoryEntries);
+  }, [categoryEntries]);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 md:p-8 mb-12">
@@ -130,7 +157,7 @@ export default function SearchFilters({
           )}
         </div>
 
-        {/* Category Pills - Always render, just show message if empty */}
+        {/* Category Pills */}
         <div>
           <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
             Filter by Category
@@ -138,6 +165,19 @@ export default function SearchFilters({
 
           {categoryEntries.length > 0 ? (
             <div className="flex flex-wrap gap-2">
+              {/* Add "All Categories" button */}
+              <button
+                type="button"
+                onClick={() => handleCategoryChange('')}
+                className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center space-x-2 text-sm md:text-base ${!currentCategory || currentCategory === '' || currentCategory === 'all'
+                  ? 'bg-blue-600 text-white shadow-lg scale-105'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+              >
+                <span>All Categories</span>
+              </button>
+
+              {/* Category buttons */}
               {categoryEntries.map(([key, value]) => {
                 const Icon = categoryIcons[key] || AlertCircle;
                 return (
@@ -157,8 +197,10 @@ export default function SearchFilters({
               })}
             </div>
           ) : (
-            <div className="text-sm text-gray-500 dark:text-gray-400 italic">
-              Loading categories...
+            <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+              <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                No categories available. Please check the backend configuration.
+              </p>
             </div>
           )}
         </div>
@@ -180,32 +222,34 @@ export default function SearchFilters({
             </button>
 
             {/* Sort Dropdown */}
-            {showSortMenu && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="absolute top-full left-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50"
-              >
-                {sortOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => handleSortChange(option.value)}
-                    className={`w-full px-4 py-3 text-left transition-colors text-sm ${currentSort === option.value
-                      ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-semibold'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                      }`}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </motion.div>
-            )}
+            <AnimatePresence>
+              {showSortMenu && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="absolute top-full left-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50"
+                >
+                  {sortOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => handleSortChange(option.value)}
+                      className={`w-full px-4 py-3 text-left transition-colors text-sm ${currentSort === option.value
+                        ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-semibold'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                        }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* Clear Filters Button */}
-          {(search || (currentCategory && currentCategory !== 'all')) && (
+          {(search || (currentCategory && currentCategory !== 'all' && currentCategory !== '')) && (
             <button
               type="button"
               onClick={clearFilters}

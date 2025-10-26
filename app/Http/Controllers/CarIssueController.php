@@ -26,7 +26,7 @@ class CarIssueController extends Controller
         }
 
         // Category filter
-        if ($request->filled('category')) {
+        if ($request->filled('category') && $request->input('category') !== 'all') {
             $query->where('category', $request->input('category'));
         }
 
@@ -35,10 +35,10 @@ class CarIssueController extends Controller
             $query->where('severity', $request->input('severity'));
         }
 
-        // Sorting
+        // Sorting - FIX: Match frontend sort values
         $sortBy = $request->input('sort', 'popular');
         switch ($sortBy) {
-            case 'newest':
+            case 'recent': // Changed from 'newest' to match frontend
                 $query->orderByDesc('created_at');
                 break;
             case 'views':
@@ -69,16 +69,29 @@ class CarIssueController extends Controller
             ->groupBy('category')
             ->pluck('count', 'category');
 
+        // FIX: Add categories array with human-readable labels
+        $categories = [
+            'engine' => 'Engine',
+            'brakes' => 'Brakes',
+            'electrical' => 'Electrical',
+            'transmission' => 'Transmission',
+            'tires' => 'Tires',
+            'suspension' => 'Suspension',
+            'cooling' => 'Cooling',
+            'fuel' => 'Fuel System',
+            'exhaust' => 'Exhaust',
+            'steering' => 'Steering',
+        ];
+
+        // FIX: Send data in the format frontend expects
         return Inertia::render('Resources/CarIssues/Index', [
             'issues' => $issues,
             'popularIssues' => $popularIssues,
+            'categories' => $categories, // NEW: Send categories
             'categoryStats' => $categoryStats,
-            'filters' => [
-                'search' => $request->input('search'),
-                'category' => $request->input('category'),
-                'severity' => $request->input('severity'),
-                'sort' => $sortBy,
-            ],
+            'currentCategory' => $request->input('category', ''), // NEW: Send as separate prop
+            'searchQuery' => $request->input('search', ''), // NEW: Send as separate prop
+            'currentSort' => $sortBy, // NEW: Send as separate prop
         ]);
     }
 
