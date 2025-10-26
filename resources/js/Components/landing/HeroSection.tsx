@@ -1,34 +1,22 @@
-import { Link } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { CheckCircle, ChevronDown } from 'lucide-react';
+import { Link } from '@inertiajs/react';
+import { CheckCircleIcon, ChevronDownIcon } from '@heroicons/react/24/solid';
+import InteractiveMapDemo from './InteractiveMapDemo';
 
 export default function HeroSection() {
-  const fadeInUp = {
-    initial: { opacity: 0, y: 20 },
-    animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.6 },
+  const scrollToContent = () => {
+    window.scrollTo({
+      top: window.innerHeight,
+      behavior: 'smooth',
+    });
   };
-
-  const staggerChildren = {
-    animate: {
-      transition: {
-        staggerChildren: 0.1,
-      },
-    },
-  };
-
-  const trustIndicators = [
-    { text: '50,000+ Issues Solved', icon: CheckCircle },
-    { text: '5,000+ Verified Experts', icon: CheckCircle },
-    { text: 'Average 2-min Response', icon: CheckCircle },
-  ];
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-16 md:pt-0">
-      {/* Animated Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-pink-900/20">
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-indigo-950 dark:to-purple-950">
+      {/* Animated Background Pattern */}
+      <div className="absolute inset-0 opacity-30 dark:opacity-20">
         <motion.div
-          className="absolute inset-0 opacity-30"
+          className="absolute inset-0"
           animate={{
             backgroundPosition: ['0% 0%', '100% 100%'],
           }}
@@ -39,125 +27,183 @@ export default function HeroSection() {
           }}
           style={{
             backgroundImage:
-              'radial-gradient(circle, rgba(59,130,246,0.1) 1px, transparent 1px)',
-            backgroundSize: '50px 50px',
+              'radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(147, 51, 234, 0.1) 0%, transparent 50%)',
+            backgroundSize: '100% 100%',
           }}
         />
       </div>
 
-      {/* Content */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-32 text-center">
-        <motion.div
-          variants={staggerChildren}
-          initial="initial"
-          animate="animate"
-        >
-          {/* Headline */}
-          <motion.h1
-            variants={fadeInUp}
-            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-gray-900 dark:text-white mb-6"
-          >
-            Your Car's{' '}
-            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Smart Companion
-            </span>
-          </motion.h1>
-
-          {/* Subheadline */}
-          <motion.p
-            variants={fadeInUp}
-            className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto"
-          >
-            AI-powered diagnostics + Expert mechanics, instantly
-          </motion.p>
-
-          {/* CTAs */}
+      {/* Content Container */}
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+          {/* Left Column - Text Content */}
           <motion.div
-            variants={fadeInUp}
-            className="flex flex-col sm:flex-row gap-4 justify-center mb-12"
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8 }}
+            className="text-center lg:text-left"
           >
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            {/* Badge */}
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full text-sm font-medium mb-6"
+            >
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
+              </span>
+              AI-Powered Vehicle Diagnostics
+            </motion.div>
+
+            {/* Main Headline */}
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.8 }}
+              className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 dark:text-white mb-6 leading-tight"
+            >
+              Your Car's{' '}
+              <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
+                Smart Companion
+              </span>
+            </motion.h1>
+
+            {/* Subheadline */}
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.8 }}
+              className="text-xl sm:text-2xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto lg:mx-0"
+            >
+              Get instant AI-powered diagnostics and connect with verified local
+              mechanics in seconds
+            </motion.p>
+
+            {/* CTA Buttons */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5, duration: 0.8 }}
+              className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-10"
+            >
               <Link
                 href="/diagnose"
-                className="inline-block px-8 py-4 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-lg font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
+                className="group inline-flex items-center justify-center gap-2 px-8 py-4 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
               >
-                Diagnose Issue Now
+                <span>Diagnose Issue Now</span>
+                <svg
+                  className="w-5 h-5 group-hover:translate-x-1 transition-transform"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 7l5 5m0 0l-5 5m5-5H6"
+                  />
+                </svg>
               </Link>
-            </motion.div>
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+
               <Link
                 href="/experts"
-                className="inline-block px-8 py-4 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 text-lg font-semibold rounded-lg border-2 border-gray-300 dark:border-gray-600 shadow-lg hover:shadow-xl transition-all duration-200"
+                className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 font-semibold border-2 border-gray-300 dark:border-gray-600 rounded-xl transition-all duration-200 transform hover:-translate-y-0.5"
               >
-                Find Expert
+                <span>Find Expert</span>
               </Link>
+            </motion.div>
+
+            {/* Trust Indicators */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.6, duration: 0.8 }}
+              className="flex flex-wrap items-center justify-center lg:justify-start gap-6 text-sm"
+            >
+              <div className="flex items-center gap-2">
+                <CheckCircleIcon className="w-5 h-5 text-green-500 dark:text-green-400" />
+                <span className="text-gray-700 dark:text-gray-300 font-medium">
+                  50,000+ Issues Solved
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircleIcon className="w-5 h-5 text-green-500 dark:text-green-400" />
+                <span className="text-gray-700 dark:text-gray-300 font-medium">
+                  5,000+ Verified Experts
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircleIcon className="w-5 h-5 text-green-500 dark:text-green-400" />
+                <span className="text-gray-700 dark:text-gray-300 font-medium">
+                  2-min Avg Response
+                </span>
+              </div>
+            </motion.div>
+
+            {/* Social Proof - Star Rating */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.7, duration: 0.8 }}
+              className="mt-8 flex items-center justify-center lg:justify-start gap-2"
+            >
+              <div className="flex">
+                {[...Array(5)].map((_, i) => (
+                  <svg
+                    key={i}
+                    className="w-5 h-5 text-yellow-400"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                ))}
+              </div>
+              <span className="text-gray-700 dark:text-gray-300 font-semibold">
+                4.9/5
+              </span>
+              <span className="text-gray-500 dark:text-gray-400 text-sm">
+                from 2,500+ reviews
+              </span>
             </motion.div>
           </motion.div>
 
-          {/* Trust Indicators */}
+          {/* Right Column - Interactive Map */}
           <motion.div
-            variants={fadeInUp}
-            className="flex flex-wrap justify-center gap-6 md:gap-8 text-sm md:text-base"
+            initial={{ opacity: 0, x: 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.4, duration: 0.8 }}
+            className="lg:block"
           >
-            {trustIndicators.map((indicator, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.5 + index * 0.1 }}
-                className="flex items-center space-x-2"
-              >
-                <indicator.icon className="w-5 h-5 text-green-500" />
-                <span className="text-gray-700 dark:text-gray-300 font-medium">
-                  {indicator.text}
-                </span>
-              </motion.div>
-            ))}
+            <InteractiveMapDemo />
           </motion.div>
-        </motion.div>
-
-        {/* Mockup Image */}
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, delay: 0.3 }}
-          className="mt-16"
-        >
-          <motion.div
-            animate={{
-              y: [0, -10, 0],
-            }}
-            transition={{
-              duration: 3,
-              repeat: Infinity,
-              repeatType: 'reverse',
-            }}
-            className="relative max-w-4xl mx-auto"
-          >
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 border border-gray-200 dark:border-gray-700">
-              <div className="space-y-4">
-                <div className="h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg w-3/4"></div>
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
-                <div className="grid grid-cols-3 gap-4 mt-6">
-                  <div className="h-24 bg-blue-100 dark:bg-blue-900/30 rounded-lg"></div>
-                  <div className="h-24 bg-purple-100 dark:bg-purple-900/30 rounded-lg"></div>
-                  <div className="h-24 bg-pink-100 dark:bg-pink-900/30 rounded-lg"></div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </motion.div>
+        </div>
       </div>
 
-      {/* Scroll Indicator */}
-      <motion.div
-        className="absolute bottom-8 left-1/2 transform -translate-x-1/2"
-        animate={{ y: [0, 10, 0] }}
-        transition={{ duration: 1.5, repeat: Infinity }}
+      {/* Scroll Down Indicator */}
+      <motion.button
+        onClick={scrollToContent}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.5 }}
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors cursor-pointer group"
+        aria-label="Scroll to content"
       >
-        <ChevronDown className="w-8 h-8 text-gray-400 dark:text-gray-600" />
-      </motion.div>
+        <span className="text-sm font-medium">Scroll to explore</span>
+        <motion.div
+          animate={{ y: [0, 8, 0] }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+        >
+          <ChevronDownIcon className="w-6 h-6" />
+        </motion.div>
+      </motion.button>
+
+      {/* Decorative Elements */}
+      <div className="absolute top-20 right-10 w-72 h-72 bg-blue-400/10 rounded-full blur-3xl" />
+      <div className="absolute bottom-20 left-10 w-72 h-72 bg-purple-400/10 rounded-full blur-3xl" />
     </section>
   );
 }
