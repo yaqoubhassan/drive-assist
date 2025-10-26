@@ -1,23 +1,29 @@
-// Maintenance Feature TypeScript Interfaces
+// resources/js/types/maintenance.ts
 
-export interface MaintenanceStep {
+export interface Step {
   step_number: number;
   title: string;
   description: string;
+}
+
+export interface Task {
+  task: string;
+  description: string;
+  priority?: 'low' | 'medium' | 'high' | 'critical';
 }
 
 export interface MaintenanceGuide {
   id: number;
   title: string;
   slug: string;
-  category: string;
+  category: 'fluid_check' | 'filter_replacement' | 'tire_maintenance' | 'brake_maintenance' | 'engine_maintenance' | 'electrical' | 'seasonal' | 'general';
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   estimated_time_minutes: number;
   description: string;
-  tools_required: string[];
-  materials_needed: string[];
-  steps: MaintenanceStep[];
-  safety_warnings: string;
+  tools_required: string[]; // JSON array in DB
+  materials_needed: string[]; // JSON array in DB
+  steps: Step[]; // JSON array in DB
+  safety_warnings: string | null;
   tips_and_tricks: string | null;
   estimated_cost_min: number | null;
   estimated_cost_max: number | null;
@@ -26,35 +32,45 @@ export interface MaintenanceGuide {
   view_count: number;
   helpful_count: number;
   is_popular: boolean;
+  // Appended attributes from backend
+  category_label: string;
+  difficulty_badge: {
+    label: string;
+    color: string;
+    bg_class: string;
+  };
   formatted_time: string;
   formatted_cost_range: string;
-  difficulty_color: string;
 }
 
 export interface MaintenanceSchedule {
   id: number;
   title: string;
   slug: string;
-  interval: string;
+  interval: 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'semi_annually' | 'annually';
   mileage_interval: number | null;
   description: string;
-  tasks: string[];
+  tasks: Task[]; // JSON array in DB
   priority: 'low' | 'medium' | 'high' | 'critical';
-  season: string | null;
+  season: 'spring' | 'summer' | 'fall' | 'winter' | 'all';
   estimated_cost_min: number | null;
   estimated_cost_max: number | null;
   diy_possible: boolean;
   view_count: number;
+  helpful_count: number;
+  // Appended attributes from backend
+  interval_label: string;
+  badge_class: string;
   formatted_interval: string;
   formatted_cost_range: string;
-  priority_color: string;
+  formatted_time: string;
 }
 
 export interface FluidGuide {
   id: number;
   name: string;
   slug: string;
-  fluid_type: string;
+  fluid_type: string | null;
   description: string;
   function: string;
   check_procedure: string;
@@ -70,40 +86,47 @@ export interface FluidGuide {
   estimated_cost_max: number | null;
   color_when_good: string | null;
   color_when_bad: string | null;
-  icon: string;
+  icon: string | null;
   view_count: number;
+  helpful_count: number;
   is_critical: boolean;
+  // Appended attributes from backend
   check_interval_text: string;
   change_interval_text: string;
   formatted_cost_range: string;
-}
-
-export interface SeverityInfo {
-  label: string;
-  color: string;
-  icon: string;
-  bg_class: string;
+  formatted_capacity: string;
 }
 
 export interface WarningLight {
   id: number;
   name: string;
   slug: string;
-  severity: 'info' | 'caution' | 'warning' | 'critical';
-  color: string;
   icon_description: string;
-  emoji: string;
-  meaning: string;
-  possible_causes: string;
-  immediate_action: string;
-  long_term_solution: string | null;
-  safe_to_drive: boolean;
-  driving_restrictions: string | null;
+  color: 'red' | 'yellow' | 'orange' | 'green' | 'blue' | 'white';
+  severity: 'critical' | 'warning' | 'advisory' | 'information';
+  what_it_means: string;
+  what_to_do: string;
+  can_continue_driving: boolean;
+  typical_causes: string[];
   estimated_repair_cost_min: number | null;
   estimated_repair_cost_max: number | null;
+  prevention_tips: string | null;
+  icon_image: string | null;
   view_count: number;
+  helpful_count: number;
   is_common: boolean;
-  severity_info: SeverityInfo;
+  // Appended attributes from backend
+  severity_badge: {
+    label: string;
+    color: string;
+    bg_class: string;
+    icon_class: string;
+  };
+  color_badge: {
+    label: string;
+    color: string;
+    bg_class: string;
+  };
   formatted_cost_range: string;
 }
 
@@ -132,6 +155,8 @@ export interface SeasonalChecklist {
   estimated_cost_max: number | null;
   estimated_time_hours: number;
   view_count: number;
+  helpful_count: number;
+  // Appended attributes from backend
   season_info: SeasonInfo;
   formatted_cost_range: string;
   formatted_time: string;
@@ -160,6 +185,9 @@ export interface MaintenanceIndexProps {
     total_warning_lights: number;
     total_seasonal_checklists: number;
   };
+  popularGuides: MaintenanceGuide[];      // Added
+  criticalFluids: FluidGuide[];           // Added
+  commonWarningLights: WarningLight[];
 }
 
 export interface GuidesIndexProps {

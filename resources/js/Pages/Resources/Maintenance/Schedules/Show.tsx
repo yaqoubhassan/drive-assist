@@ -215,7 +215,7 @@ export default function ScheduleShow({ schedule, relatedSchedules }: ScheduleSho
                         </div>
                       </div>
                       <div className="flex-1">
-                        <p className="text-gray-900 dark:text-white font-medium">{task}</p>
+                        <p className="text-gray-900 dark:text-white font-medium">{task.description}</p>
                       </div>
                     </div>
                   ))}

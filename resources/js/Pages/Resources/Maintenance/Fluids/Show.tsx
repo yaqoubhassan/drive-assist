@@ -71,7 +71,7 @@ export default function FluidShow({ fluid, relatedFluids }: FluidShowProps) {
                     {fluid.name}
                   </h1>
                   <p className="text-lg text-gray-600 dark:text-gray-400 capitalize">
-                    {fluid.fluid_type.replace('_', ' ')}
+                    {fluid.fluid_type?.replace('_', ' ') || 'Unknown Type'}
                   </p>
                 </div>
               </div>

@@ -19,10 +19,11 @@ class MaintenanceController extends Controller
     {
         return Inertia::render('Resources/Maintenance/Index', [
             'stats' => [
-                'guides' => MaintenanceGuide::published()->count(),
-                'schedules' => MaintenanceSchedule::published()->count(),
-                'fluids' => FluidGuide::published()->count(),
-                'warningLights' => WarningLight::published()->count(),
+                'total_guides' => MaintenanceGuide::published()->count(),
+                'total_schedules' => MaintenanceSchedule::published()->count(),
+                'total_fluids' => FluidGuide::published()->count(),
+                'total_warning_lights' => WarningLight::published()->count(),
+                'total_seasonal_checklists' => SeasonalChecklist::published()->count(),
             ],
             'popularGuides' => MaintenanceGuide::published()
                 ->popular()
