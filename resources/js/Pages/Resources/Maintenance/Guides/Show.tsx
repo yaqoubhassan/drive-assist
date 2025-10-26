@@ -1,89 +1,160 @@
+// resources/js/Pages/Resources/Maintenance/Guides/Show.tsx
+
 import { Head, Link } from '@inertiajs/react';
 import { motion } from 'framer-motion';
+import { useState } from 'react';
 import Navbar from '@/Components/Navbar';
 import Footer from '@/Components/Footer';
 import { ThemeProvider } from '@/contexts/ThemeContext';
-import { GuideShowProps } from '@/types/maintenance';
-import DifficultyBadge from '@/Components/maintenance/DifficultyBadge';
-import CostEstimate from '@/Components/maintenance/CostEstimate';
-import HelpfulFeedback from '@/Components/maintenance/HelpfulFeedback';
 import MaintenanceGuideCard from '@/Components/maintenance/MaintenanceGuideCard';
+import DifficultyBadge from '@/Components/maintenance/DifficultyBadge';
+import HelpfulFeedback from '@/Components/maintenance/HelpfulFeedback';
 import {
   ArrowLeft,
   Clock,
+  DollarSign,
   Eye,
   Wrench,
-  AlertTriangle,
   CheckCircle,
-  Play,
+  AlertTriangle,
   Download,
   Share2,
 } from 'lucide-react';
+import { GuideShowProps } from '@/types/maintenance';
+
+// ============================================================================
+// DEFENSIVE HELPER FUNCTION - Ensures arrays are never null/undefined
+// ============================================================================
+const ensureArray = (value: any): any[] => {
+  // If it's already an array, return it
+  if (Array.isArray(value)) return value;
+
+  // If it's null or undefined, return empty array
+  if (value === null || value === undefined) return [];
+
+  // If it's a string (shouldn't happen with proper backend), try to parse
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  // Default: return empty array
+  return [];
+};
 
 export default function GuideShow({ guide, relatedGuides }: GuideShowProps) {
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: guide.title,
-        text: guide.description,
-        url: window.location.href,
-      });
-    } else {
-      // Fallback: Copy to clipboard
-      navigator.clipboard.writeText(window.location.href);
-      alert('Link copied to clipboard!');
-    }
+  // ============================================================================
+  // DEFENSIVE DATA WRAPPING - Ensure all arrays are properly formatted
+  // ============================================================================
+  const safeGuide = {
+    ...guide,
+    tools_required: ensureArray(guide.tools_required),
+    materials_needed: ensureArray(guide.materials_needed),
+    steps: ensureArray(guide.steps),
   };
 
+  // ============================================================================
+  // STATE MANAGEMENT
+  // ============================================================================
+  const [shareMessage, setShareMessage] = useState<string | null>(null);
+
+  // ============================================================================
+  // HANDLERS
+  // ============================================================================
+  const handleShare = async () => {
+    const url = window.location.href;
+    const title = safeGuide.title;
+    const text = `Check out this maintenance guide: ${title}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, text, url });
+        setShareMessage('Shared successfully!');
+      } catch (error) {
+        if ((error as Error).name !== 'AbortError') {
+          copyToClipboard(url);
+        }
+      }
+    } else {
+      copyToClipboard(url);
+    }
+
+    setTimeout(() => setShareMessage(null), 3000);
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setShareMessage('Link copied to clipboard!');
+  };
+
+  // ============================================================================
+  // RENDER
+  // ============================================================================
   return (
     <ThemeProvider>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <Head title={`${guide.title} - Maintenance Guides - DriveAssist`} />
+        <Head title={`${safeGuide.title} - DriveAssist`} />
 
         <Navbar />
 
         <main className="pt-24 pb-16">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            {/* Breadcrumb */}
-            <div className="mb-8">
-              <Link
-                href="/resources/maintenance/guides"
-                className="inline-flex items-center text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Guides
-              </Link>
-            </div>
+            {/* Back Button */}
+            <Link
+              href="/resources/maintenance/guides"
+              className="inline-flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline mb-6"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back to Guides</span>
+            </Link>
 
-            {/* Header */}
+            {/* Header Section */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="mb-8"
             >
+              {/* Category Badge */}
+              <div className="mb-4">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100">
+                  {safeGuide.category_label || 'Guide'}
+                </span>
+              </div>
+
               {/* Title */}
-              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
-                {guide.title}
+              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">
+                {safeGuide.title}
               </h1>
 
               {/* Meta Info */}
               <div className="flex flex-wrap items-center gap-4 mb-6">
-                <DifficultyBadge difficulty={guide.difficulty} />
+                <DifficultyBadge difficulty={safeGuide.difficulty} />
 
                 <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                   <Clock className="w-4 h-4" />
-                  <span>{guide.formatted_time}</span>
+                  <span>{safeGuide.formatted_time}</span>
                 </div>
+
+                {safeGuide.formatted_cost_range && (
+                  <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                    <DollarSign className="w-4 h-4" />
+                    <span>{safeGuide.formatted_cost_range}</span>
+                  </div>
+                )}
 
                 <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                   <Eye className="w-4 h-4" />
-                  <span>{guide.view_count.toLocaleString()} views</span>
+                  <span>{safeGuide.view_count.toLocaleString()} views</span>
                 </div>
               </div>
 
               {/* Description */}
               <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">
-                {guide.description}
+                {safeGuide.description}
               </p>
 
               {/* Actions */}
@@ -104,68 +175,79 @@ export default function GuideShow({ guide, relatedGuides }: GuideShowProps) {
                   <span>Print Guide</span>
                 </button>
               </div>
+
+              {/* Share Message */}
+              {shareMessage && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="mt-4 p-3 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100 rounded-lg"
+                >
+                  {shareMessage}
+                </motion.div>
+              )}
             </motion.div>
 
             {/* Featured Image or Video */}
-            {(guide.featured_image || guide.video_url) && (
+            {(safeGuide.featured_image || safeGuide.video_url) && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.2 }}
                 className="mb-8 rounded-xl overflow-hidden"
               >
-                {guide.video_url ? (
+                {safeGuide.video_url ? (
                   <div className="relative aspect-video bg-gray-900">
                     <iframe
-                      src={guide.video_url}
-                      title={guide.title}
+                      src={safeGuide.video_url}
+                      title={safeGuide.title}
                       className="w-full h-full"
                       allowFullScreen
                     />
                   </div>
-                ) : guide.featured_image ? (
+                ) : safeGuide.featured_image ? (
                   <img
-                    src={guide.featured_image}
-                    alt={guide.title}
-                    className="w-full h-auto"
+                    src={safeGuide.featured_image}
+                    alt={safeGuide.title}
+                    className="w-full h-auto rounded-xl"
                   />
                 ) : null}
               </motion.div>
             )}
 
             {/* Cost Estimate */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 mb-8"
-            >
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                At a Glance
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <CostEstimate costRange={guide.formatted_cost_range} />
-                <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                  <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                    <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                  </div>
+            {(safeGuide.estimated_cost_min || safeGuide.estimated_cost_max) && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 rounded-xl p-6 border border-green-200 dark:border-green-800 mb-8"
+              >
+                <div className="flex items-center gap-3">
+                  <DollarSign className="w-8 h-8 text-green-600 dark:text-green-400" />
                   <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Time Required</p>
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                      {guide.formatted_time}
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
+                      Estimated Cost
+                    </h3>
+                    <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                      {safeGuide.formatted_cost_range}
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      Parts and materials (labor not included)
                     </p>
                   </div>
                 </div>
-              </div>
-            </motion.div>
+              </motion.div>
+            )}
 
             {/* Safety Warnings */}
-            {guide.safety_warnings && (
+            {safeGuide.safety_warnings && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
-                className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 dark:border-red-600 p-6 rounded-lg mb-8"
+                className="bg-red-50 dark:bg-red-900/20 rounded-xl p-6 border-l-4 border-red-500 dark:border-red-600 mb-8"
               >
                 <div className="flex items-start gap-3">
                   <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
@@ -174,7 +256,7 @@ export default function GuideShow({ guide, relatedGuides }: GuideShowProps) {
                       Safety Warnings
                     </h3>
                     <p className="text-red-800 dark:text-red-200 whitespace-pre-line">
-                      {guide.safety_warnings}
+                      {safeGuide.safety_warnings}
                     </p>
                   </div>
                 </div>
@@ -182,88 +264,108 @@ export default function GuideShow({ guide, relatedGuides }: GuideShowProps) {
             )}
 
             {/* Tools Required */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 mb-8"
-            >
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                <Wrench className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                Tools Required
-              </h2>
-              <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {guide.tools_required.map((tool, index) => (
-                  <li key={index} className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                    <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-                    <span>{tool}</span>
-                  </li>
-                ))}
-              </ul>
-            </motion.div>
+            {safeGuide.tools_required.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 mb-8"
+              >
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                  <Wrench className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                  Tools Required
+                </h2>
+                <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {safeGuide.tools_required.map((tool, index) => (
+                    <li key={index} className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                      <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                      <span>{tool}</span>
+                    </li>
+                  ))}
+                </ul>
+              </motion.div>
+            )}
 
             {/* Materials Needed */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
-              className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 mb-8"
-            >
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-                Materials Needed
-              </h2>
-              <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {guide.materials_needed.map((material, index) => (
-                  <li key={index} className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                    <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-                    <span>{material}</span>
-                  </li>
-                ))}
-              </ul>
-            </motion.div>
+            {safeGuide.materials_needed.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+                className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 mb-8"
+              >
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+                  Materials Needed
+                </h2>
+                <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {safeGuide.materials_needed.map((material, index) => (
+                    <li key={index} className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                      <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                      <span>{material}</span>
+                    </li>
+                  ))}
+                </ul>
+              </motion.div>
+            )}
 
             {/* Step-by-Step Instructions */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7 }}
-              className="mb-8"
-            >
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">
-                Step-by-Step Instructions
-              </h2>
+            {safeGuide.steps.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.7 }}
+                className="mb-8"
+              >
+                <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">
+                  Step-by-Step Instructions
+                </h2>
 
-              <div className="space-y-6">
-                {guide.steps.map((step, index) => (
-                  <div
-                    key={index}
-                    className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700"
-                  >
-                    <div className="flex gap-4">
-                      {/* Step Number */}
-                      <div className="flex-shrink-0">
-                        <div className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-lg">
-                          {step.step_number}
+                <div className="space-y-6">
+                  {safeGuide.steps.map((step, index) => (
+                    <div
+                      key={index}
+                      className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700"
+                    >
+                      <div className="flex gap-4">
+                        {/* Step Number */}
+                        <div className="flex-shrink-0">
+                          <div className="w-10 h-10 bg-blue-600 dark:bg-blue-500 text-white rounded-full flex items-center justify-center font-bold text-lg">
+                            {step.step_number || index + 1}
+                          </div>
+                        </div>
+
+                        {/* Step Content */}
+                        <div className="flex-1">
+                          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                            {step.title}
+                          </h3>
+                          <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line">
+                            {step.description}
+                          </p>
                         </div>
                       </div>
-
-                      {/* Step Content */}
-                      <div className="flex-1">
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                          {step.title}
-                        </h3>
-                        <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line">
-                          {step.description}
-                        </p>
-                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
+            {/* Empty State Message (if no steps) */}
+            {safeGuide.steps.length === 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.7 }}
+                className="bg-yellow-50 dark:bg-yellow-900/20 rounded-xl p-6 border border-yellow-200 dark:border-yellow-800 mb-8 text-center"
+              >
+                <p className="text-yellow-800 dark:text-yellow-200">
+                  Detailed step-by-step instructions are being prepared for this guide.
+                </p>
+              </motion.div>
+            )}
 
             {/* Tips and Tricks */}
-            {guide.tips_and_tricks && (
+            {safeGuide.tips_and_tricks && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -275,7 +377,7 @@ export default function GuideShow({ guide, relatedGuides }: GuideShowProps) {
                   Tips & Tricks
                 </h2>
                 <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line">
-                  {guide.tips_and_tricks}
+                  {safeGuide.tips_and_tricks}
                 </p>
               </motion.div>
             )}
@@ -289,13 +391,13 @@ export default function GuideShow({ guide, relatedGuides }: GuideShowProps) {
             >
               <HelpfulFeedback
                 resourceType="guide"
-                resourceId={guide.id}
-                helpfulCount={guide.helpful_count}
+                resourceId={safeGuide.id}
+                helpfulCount={safeGuide.helpful_count}
               />
             </motion.div>
 
             {/* Related Guides */}
-            {relatedGuides.length > 0 && (
+            {relatedGuides && relatedGuides.length > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -307,7 +409,11 @@ export default function GuideShow({ guide, relatedGuides }: GuideShowProps) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {relatedGuides.map((relatedGuide, index) => (
-                    <MaintenanceGuideCard key={relatedGuide.id} guide={relatedGuide} index={index} />
+                    <MaintenanceGuideCard
+                      key={relatedGuide.id}
+                      guide={relatedGuide}
+                      index={index}
+                    />
                   ))}
                 </div>
               </motion.div>
