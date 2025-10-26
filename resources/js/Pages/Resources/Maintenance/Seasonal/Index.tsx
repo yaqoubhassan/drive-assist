@@ -14,6 +14,8 @@ import {
   CheckCircle,
   Eye,
   ArrowRight,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 // Seasonal Checklist Card Component
@@ -23,6 +25,11 @@ interface ChecklistCardProps {
 }
 
 function ChecklistCard({ checklist, index }: ChecklistCardProps) {
+  // Ensure checklist_items is an array
+  const items = Array.isArray(checklist.checklist_items)
+    ? checklist.checklist_items
+    : [];
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -42,7 +49,7 @@ function ChecklistCard({ checklist, index }: ChecklistCardProps) {
                 {checklist.season.charAt(0).toUpperCase() + checklist.season.slice(1)}
               </span>
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300">
-                {checklist.checklist_items.length} items
+                {items.length} items
               </span>
             </div>
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors mb-2">
@@ -57,23 +64,25 @@ function ChecklistCard({ checklist, index }: ChecklistCardProps) {
         </p>
 
         {/* Preview Checklist Items */}
-        <div className="space-y-2 mb-4">
-          {checklist.checklist_items.slice(0, 3).map((item, idx) => (
-            <div key={idx} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
-              <CheckCircle className={`w-4 h-4 flex-shrink-0 mt-0.5 ${item.priority === 'critical' ? 'text-red-500' :
-                item.priority === 'high' ? 'text-orange-500' :
-                  item.priority === 'medium' ? 'text-yellow-500' :
-                    'text-green-500'
-                }`} />
-              <span className="line-clamp-1">{item.item}</span>
-            </div>
-          ))}
-          {checklist.checklist_items.length > 3 && (
-            <p className="text-xs text-gray-500 dark:text-gray-400 pl-6">
-              +{checklist.checklist_items.length - 3} more items
-            </p>
-          )}
-        </div>
+        {items.length > 0 && (
+          <div className="space-y-2 mb-4">
+            {items.slice(0, 3).map((item, idx) => (
+              <div key={idx} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                <CheckCircle className={`w-4 h-4 flex-shrink-0 mt-0.5 ${item.priority === 'critical' ? 'text-red-500' :
+                  item.priority === 'high' ? 'text-orange-500' :
+                    item.priority === 'medium' ? 'text-yellow-500' :
+                      'text-green-500'
+                  }`} />
+                <span className="line-clamp-1">{item.item}</span>
+              </div>
+            ))}
+            {items.length > 3 && (
+              <p className="text-xs text-gray-500 dark:text-gray-400 pl-6">
+                +{items.length - 3} more items
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Meta Info */}
         <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
@@ -132,264 +141,201 @@ export default function SeasonalChecklistsIndex({
     });
   };
 
-  const clearFilters = () => {
-    router.get('/resources/maintenance/seasonal');
-  };
-
-  const hasActiveFilters = currentSeason || searchQuery;
+  const sortOptions = [
+    { value: 'season', label: 'By Season' },
+    { value: 'popular', label: 'Most Popular' },
+    { value: 'recent', label: 'Recently Added' },
+    { value: 'helpful', label: 'Most Helpful' },
+  ];
 
   return (
     <ThemeProvider>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <Head title="Seasonal Maintenance Checklists - DriveAssist" />
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+        <Head title="Seasonal Maintenance Checklists - DriveAssist Resources" />
 
         <Navbar />
 
-        <main className="pt-24 pb-16">
+        {/* Hero Section */}
+        <div className="bg-gradient-to-br from-blue-600 to-purple-700 dark:from-blue-900 dark:to-purple-900 text-white py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            {/* Hero Section */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-center mb-12"
+              className="text-center"
             >
-              <div className="flex justify-center mb-6">
-                <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center">
-                  <Calendar className="w-10 h-10 text-white" />
-                </div>
-              </div>
-
-              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+              <Calendar className="w-16 h-16 mx-auto mb-4" />
+              <h1 className="text-4xl md:text-5xl font-bold mb-4">
                 Seasonal Maintenance Checklists
               </h1>
-
-              <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
-                Prepare your vehicle for every season with our comprehensive maintenance checklists.
-                Keep your car running smoothly year-round.
+              <p className="text-xl text-blue-100 dark:text-blue-200 max-w-3xl mx-auto">
+                Prepare your vehicle for every season with comprehensive maintenance checklists
               </p>
             </motion.div>
+          </div>
+        </div>
 
-            {/* Season Quick Links */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
+        {/* Search and Filters */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-8">
+            {/* Search Bar */}
+            <form onSubmit={handleSearch} className="mb-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search seasonal checklists..."
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+              </div>
+            </form>
+
+            {/* Filter Toggle Button (Mobile) */}
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="md:hidden w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
             >
-              {Object.entries(seasons).map(([key, label]) => (
-                <button
-                  key={key}
-                  onClick={() => handleFilterChange('season', currentSeason === key ? '' : key)}
-                  className={`p-4 rounded-xl border-2 transition-all ${currentSeason === key
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                    }`}
-                >
-                  <div className="text-3xl mb-2">
-                    {key === 'spring' && '🌸'}
-                    {key === 'summer' && '☀️'}
-                    {key === 'fall' && '🍂'}
-                    {key === 'winter' && '❄️'}
-                  </div>
-                  <div className="text-sm font-semibold text-gray-900 dark:text-white">
-                    {label}
-                  </div>
-                </button>
-              ))}
-            </motion.div>
+              <Filter className="w-4 h-4" />
+              Filters
+            </button>
 
-            {/* Search and Filters */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm mb-8"
-            >
-              {/* Search Bar */}
-              <form onSubmit={handleSearch} className="mb-4">
-                <div className="relative">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="text"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search seasonal checklists..."
-                    className="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-                  />
-                </div>
-              </form>
-
-              {/* Filter Toggle */}
-              <div className="flex items-center justify-between">
-                <button
-                  onClick={() => setShowFilters(!showFilters)}
-                  className="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                >
-                  <Filter className="w-4 h-4" />
-                  <span className="font-medium">
-                    {showFilters ? 'Hide Filters' : 'Show Filters'}
-                  </span>
-                  {hasActiveFilters && (
-                    <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2 py-0.5 rounded-full text-xs">
-                      Active
-                    </span>
-                  )}
-                </button>
-
-                {hasActiveFilters && (
-                  <button
-                    onClick={clearFilters}
-                    className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+            {/* Filters */}
+            <div className={`${showFilters ? 'block' : 'hidden'} md:block mt-4 md:mt-0`}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Season Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Season
+                  </label>
+                  <select
+                    value={currentSeason || 'all'}
+                    onChange={(e) => handleFilterChange('season', e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   >
-                    Clear all filters
-                  </button>
-                )}
+                    {Object.entries(seasons).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Sort Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Sort By
+                  </label>
+                  <select
+                    value={currentSort || 'season'}
+                    onChange={(e) => handleFilterChange('sort', e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  >
+                    {sortOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Results Count */}
+          <div className="mb-6">
+            <p className="text-gray-600 dark:text-gray-400">
+              Showing <span className="font-semibold">{checklists.data.length}</span> of{' '}
+              <span className="font-semibold">{checklists.total}</span> checklists
+            </p>
+          </div>
+
+          {/* Checklists Grid */}
+          {checklists.data.length > 0 ? (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                {checklists.data.map((checklist, index) => (
+                  <ChecklistCard key={checklist.id} checklist={checklist} index={index} />
+                ))}
               </div>
 
-              {/* Filters Panel */}
-              {showFilters && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700 grid grid-cols-1 md:grid-cols-2 gap-4"
-                >
-                  {/* Season Filter */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Season
-                    </label>
-                    <select
-                      value={currentSeason || ''}
-                      onChange={(e) => handleFilterChange('season', e.target.value)}
-                      className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white"
+              {/* Pagination */}
+              {checklists.last_page > 1 && (
+                <div className="flex items-center justify-center gap-2">
+                  {/* Previous Button */}
+                  {checklists.links[0].url && (
+                    <Link
+                      href={checklists.links[0].url}
+                      className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
+                      preserveState
+                      preserveScroll
                     >
-                      <option value="">All Seasons</option>
-                      {Object.entries(seasons).map(([key, label]) => (
-                        <option key={key} value={key}>
-                          {label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                      <ChevronLeft className="w-4 h-4" />
+                      Previous
+                    </Link>
+                  )}
 
-                  {/* Sort */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Sort By
-                    </label>
-                    <select
-                      value={currentSort || 'season'}
-                      onChange={(e) => handleFilterChange('sort', e.target.value)}
-                      className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white"
-                    >
-                      <option value="season">By Season</option>
-                      <option value="popular">Most Popular</option>
-                      <option value="time">By Time (Shortest)</option>
-                      <option value="cost">By Cost (Lowest)</option>
-                    </select>
-                  </div>
-                </motion.div>
-              )}
-            </motion.div>
-
-            {/* Checklists Grid */}
-            {checklists.data.length > 0 ? (
-              <>
-                <div className="mb-6">
-                  <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
-                    {currentSeason
-                      ? `${seasons[currentSeason]} Maintenance`
-                      : 'All Seasonal Checklists'}
-                    {searchQuery && ` matching "${searchQuery}"`}
-                  </h2>
-                  <p className="text-gray-600 dark:text-gray-400 mt-2">
-                    Showing {checklists.data.length} of {checklists.total} checklists
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mb-12">
-                  {checklists.data.map((checklist, index) => (
-                    <ChecklistCard key={checklist.id} checklist={checklist} index={index} />
-                  ))}
-                </div>
-
-                {/* Pagination */}
-                {checklists.last_page > 1 && (
-                  <div className="flex justify-center gap-2">
-                    {checklists.links.map((link, index) => (
+                  {/* Page Numbers */}
+                  <div className="flex items-center gap-2">
+                    {checklists.links.slice(1, -1).map((link, index) => (
                       <Link
                         key={index}
                         href={link.url || '#'}
-                        className={`px-4 py-2 rounded-lg ${link.active
+                        className={`px-4 py-2 rounded-lg transition-colors ${link.active
                           ? 'bg-blue-600 text-white'
-                          : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
-                          } ${!link.url ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        dangerouslySetInnerHTML={{ __html: link.label }}
-                      />
+                          : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+                          }`}
+                        preserveState
+                        preserveScroll
+                      >
+                        {link.label}
+                      </Link>
                     ))}
                   </div>
-                )}
-              </>
-            ) : (
-              <div className="text-center py-16">
-                <div className="w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Calendar className="w-12 h-12 text-gray-400" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                  No checklists found
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  {searchQuery
-                    ? `No checklists match "${searchQuery}". Try a different search term.`
-                    : 'No checklists match your current filters. Try adjusting your filters.'}
-                </p>
-                {hasActiveFilters && (
-                  <button
-                    onClick={clearFilters}
-                    className="text-blue-600 dark:text-blue-400 hover:underline"
-                  >
-                    Clear all filters
-                  </button>
-                )}
-              </div>
-            )}
 
-            {/* Why Seasonal Maintenance */}
+                  {/* Next Button */}
+                  {checklists.links[checklists.links.length - 1].url && (
+                    <Link
+                      href={checklists.links[checklists.links.length - 1].url || '#'}
+                      className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
+                      preserveState
+                      preserveScroll
+                    >
+                      Next
+                      <ChevronRight className="w-4 h-4" />
+                    </Link>
+                  )}
+                </div>
+              )}
+            </>
+          ) : (
+            // Empty State
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-6 border border-blue-200 dark:border-blue-800"
+              className="text-center py-16"
             >
-              <h3 className="text-xl font-bold text-blue-900 dark:text-blue-100 mb-4">
-                Why Seasonal Maintenance Matters
+              <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                No checklists found
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-800 dark:text-blue-200">
-                <div>
-                  <p className="mb-2">
-                    <strong>Prevent Breakdowns:</strong> Seasonal changes put stress on your vehicle. Regular maintenance helps prevent unexpected failures.
-                  </p>
-                </div>
-                <div>
-                  <p className="mb-2">
-                    <strong>Save Money:</strong> Catching problems early costs less than major repairs from neglect.
-                  </p>
-                </div>
-                <div>
-                  <p className="mb-2">
-                    <strong>Stay Safe:</strong> Weather-related issues can compromise safety. Proper preparation keeps you protected.
-                  </p>
-                </div>
-                <div>
-                  <p>
-                    <strong>Extend Vehicle Life:</strong> Regular seasonal care keeps your vehicle running longer and maintains its value.
-                  </p>
-                </div>
-              </div>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                Try adjusting your filters or search terms
+              </p>
+              <button
+                onClick={() => {
+                  setSearch('');
+                  router.get('/resources/maintenance/seasonal', {}, {
+                    preserveState: false,
+                  });
+                }}
+                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
+              >
+                Clear Filters
+              </button>
             </motion.div>
-          </div>
-        </main>
+          )}
+        </div>
 
         <Footer />
       </div>

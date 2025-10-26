@@ -12,19 +12,45 @@ class SeasonalChecklistController extends Controller
     {
         $query = SeasonalChecklist::published();
 
+        // Search functionality
+        $search = $request->get('search');
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
         // Filter by season
         $season = $request->get('season', 'all');
         if ($season && $season !== 'all') {
             $query->bySeason($season);
         }
 
-        $query->orderBy('season', 'asc');
+        // Sorting
+        $sort = $request->get('sort', 'season');
+        switch ($sort) {
+            case 'popular':
+                $query->orderBy('view_count', 'desc');
+                break;
+            case 'recent':
+                $query->orderBy('created_at', 'desc');
+                break;
+            case 'helpful':
+                $query->orderBy('helpful_count', 'desc');
+                break;
+            default:
+                $query->orderBy('season', 'asc');
+        }
 
-        $checklists = $query->get();
+        // Return paginated results
+        $checklists = $query->paginate(12)->withQueryString();
 
         return Inertia::render('Resources/Maintenance/Seasonal/Index', [
             'checklists' => $checklists,
+            'searchQuery' => $search,
             'currentSeason' => $season,
+            'currentSort' => $sort,
             'seasons' => $this->getSeasons(),
         ]);
     }
