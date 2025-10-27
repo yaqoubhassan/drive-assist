@@ -19,17 +19,51 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 
-// Seasonal Checklist Card Component
+// ============================================================================
+// DEFENSIVE HELPER FUNCTION (Same as Show component!)
+// ============================================================================
+
+/**
+ * Ensures a value is always an array, never null or undefined
+ */
+const ensureArray = <T,>(value: any): T[] => {
+  // If it's already an array, return it
+  if (Array.isArray(value)) return value;
+
+  // If it's null or undefined, return empty array
+  if (value === null || value === undefined) return [];
+
+  // If it's a string (shouldn't happen with proper backend), try to parse
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  // Default: return empty array
+  return [];
+};
+
+interface ChecklistItem {
+  item: string;
+  priority: 'critical' | 'high' | 'medium' | 'low';
+}
+
+// ============================================================================
+// SEASONAL CHECKLIST CARD COMPONENT
+// ============================================================================
+
 interface ChecklistCardProps {
   checklist: SeasonalChecklist;
   index: number;
 }
 
 function ChecklistCard({ checklist, index }: ChecklistCardProps) {
-  // Ensure checklist_items is an array
-  const items = Array.isArray(checklist.checklist_items)
-    ? checklist.checklist_items
-    : [];
+  // ✅ FIX: Use ensureArray instead of simple Array.isArray check!
+  const items = ensureArray<ChecklistItem>(checklist.checklist_items);
 
   return (
     <motion.div
@@ -108,6 +142,10 @@ function ChecklistCard({ checklist, index }: ChecklistCardProps) {
     </motion.div>
   );
 }
+
+// ============================================================================
+// MAIN INDEX COMPONENT
+// ============================================================================
 
 export default function SeasonalChecklistsIndex({
   checklists,

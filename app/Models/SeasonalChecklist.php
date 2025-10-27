@@ -27,7 +27,7 @@ class SeasonalChecklist extends Model
     ];
 
     protected $casts = [
-        'checklist_items' => 'array',
+        'checklist_items' => 'array', // Laravel will automatically handle JSON encoding/decoding
         'estimated_cost_min' => 'decimal:2',
         'estimated_cost_max' => 'decimal:2',
         'estimated_time_hours' => 'decimal:1',
@@ -50,28 +50,16 @@ class SeasonalChecklist extends Model
     }
 
     /**
-     * Accessor to ensure checklist_items is ALWAYS an array
-     * This prevents frontend crashes when the data isn't properly formatted
+     * REMOVED THE CUSTOM ACCESSOR - Laravel's array cast handles everything!
+     * 
+     * The issue was that having both a cast AND a custom accessor caused conflicts.
+     * Laravel's 'array' cast automatically:
+     * 1. Decodes JSON from the database into PHP arrays
+     * 2. Encodes PHP arrays back to JSON when saving
+     * 3. Returns empty array if null
+     * 
+     * No custom accessor needed!
      */
-    public function getChecklistItemsAttribute($value)
-    {
-        // If the attribute is accessed through Eloquent and already cast
-        $attributeValue = $this->getAttributeFromArray('checklist_items');
-
-        // If it's already an array, return it
-        if (is_array($attributeValue)) {
-            return $attributeValue;
-        }
-
-        // If it's a string (raw JSON from database), decode it
-        if (is_string($attributeValue)) {
-            $decoded = json_decode($attributeValue, true);
-            return is_array($decoded) ? $decoded : [];
-        }
-
-        // Fallback to empty array
-        return [];
-    }
 
     /**
      * Query scope for published checklists
@@ -181,16 +169,8 @@ class SeasonalChecklist extends Model
         } elseif ($hours < 24) {
             return number_format($hours, 1) . ' hours';
         } else {
-            $days = floor($hours / 24);
-            $remainingHours = $hours % 24;
-
-            $formatted = $days . ' ' . ($days == 1 ? 'day' : 'days');
-
-            if ($remainingHours > 0) {
-                $formatted .= ' ' . number_format($remainingHours, 1) . ' hours';
-            }
-
-            return $formatted;
+            $days = round($hours / 24, 1);
+            return $days == 1 ? '1 day' : "$days days";
         }
     }
 }

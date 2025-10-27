@@ -5,19 +5,22 @@ namespace App\Http\Controllers;
 use App\Models\SeasonalChecklist;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Illuminate\Support\Facades\Log;
+use Inertia\Response;
 
 class SeasonalChecklistController extends Controller
 {
     /**
      * Display a listing of seasonal checklists
      */
-    public function index(Request $request)
+    public function index(Request $request): Response
     {
+        $search = $request->input('search');
+        $season = $request->input('season', 'all');
+        $sort = $request->input('sort', 'season');
+
         $query = SeasonalChecklist::published();
 
-        // Search functionality
-        $search = $request->get('search');
+        // Search filter
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
@@ -25,14 +28,12 @@ class SeasonalChecklistController extends Controller
             });
         }
 
-        // Filter by season
-        $season = $request->get('season', 'all');
+        // Season filter
         if ($season && $season !== 'all') {
-            $query->bySeason($season);
+            $query->where('season', $season);
         }
 
         // Sorting
-        $sort = $request->get('sort', 'season');
         switch ($sort) {
             case 'popular':
                 $query->orderBy('view_count', 'desc');
@@ -43,10 +44,11 @@ class SeasonalChecklistController extends Controller
             case 'helpful':
                 $query->orderBy('helpful_count', 'desc');
                 break;
+            case 'season':
             default:
-                // Sort by season order: spring, summer, fall, winter
+                // Order by season: Spring -> Summer -> Fall -> Winter
                 $query->orderByRaw("
-                    CASE season 
+                    CASE season
                         WHEN 'spring' THEN 1
                         WHEN 'summer' THEN 2
                         WHEN 'fall' THEN 3
@@ -59,9 +61,31 @@ class SeasonalChecklistController extends Controller
         // Get paginated results
         $checklists = $query->paginate(12)->withQueryString();
 
-        // CRITICAL FIX: Transform each checklist to ensure proper data format
-        $checklists->getCollection()->transform(function ($checklist) {
-            return $this->formatChecklistForFrontend($checklist);
+        // CRITICAL FIX: Explicitly ensure array cast is applied and accessible
+        // Transform the collection to make sure checklist_items is properly serialized
+        $checklists->through(function ($checklist) {
+            // Accessing the attribute forces Laravel to apply the cast
+            // We're creating a new array/object that Inertia can properly serialize
+            return [
+                'id' => $checklist->id,
+                'title' => $checklist->title,
+                'slug' => $checklist->slug,
+                'season' => $checklist->season,
+                'description' => $checklist->description,
+                'checklist_items' => $checklist->checklist_items, // This triggers the cast
+                'why_important' => $checklist->why_important,
+                'additional_tips' => $checklist->additional_tips,
+                'estimated_cost_min' => $checklist->estimated_cost_min,
+                'estimated_cost_max' => $checklist->estimated_cost_max,
+                'estimated_time_hours' => $checklist->estimated_time_hours,
+                'view_count' => $checklist->view_count,
+                'helpful_count' => $checklist->helpful_count,
+                'season_info' => $checklist->season_info,
+                'formatted_cost_range' => $checklist->formatted_cost_range,
+                'formatted_time' => $checklist->formatted_time,
+                'created_at' => $checklist->created_at,
+                'updated_at' => $checklist->updated_at,
+            ];
         });
 
         return Inertia::render('Resources/Maintenance/Seasonal/Index', [
@@ -76,7 +100,7 @@ class SeasonalChecklistController extends Controller
     /**
      * Display the specified seasonal checklist
      */
-    public function show($slug)
+    public function show($slug): Response
     {
         $checklist = SeasonalChecklist::published()
             ->where('slug', $slug)
@@ -91,16 +115,10 @@ class SeasonalChecklistController extends Controller
             ->where('id', '!=', $checklist->id)
             ->orderBy('view_count', 'desc')
             ->limit(3)
-            ->get()
-            ->map(function ($related) {
-                return $this->formatChecklistForFrontend($related);
-            });
-
-        // Format main checklist
-        $formattedChecklist = $this->formatChecklistForFrontend($checklist);
+            ->get();
 
         return Inertia::render('Resources/Maintenance/Seasonal/Show', [
-            'checklist' => $formattedChecklist,
+            'checklist' => $checklist,
             'relatedChecklists' => $relatedChecklists,
         ]);
     }
@@ -146,70 +164,6 @@ class SeasonalChecklistController extends Controller
             'message' => 'Thank you for your feedback!',
             'helpful_count' => $checklist->fresh()->helpful_count,
         ]);
-    }
-
-    /**
-     * Format checklist data for frontend
-     * 
-     * CRITICAL: This ensures checklist_items is ALWAYS an array
-     * and properly formatted for Inertia/React
-     */
-    private function formatChecklistForFrontend($checklist)
-    {
-        // Convert to array
-        $data = $checklist->toArray();
-
-        // CRITICAL FIX: Explicitly decode checklist_items from JSON if needed
-        if (isset($data['checklist_items'])) {
-            // If it's a string (raw JSON from DB), decode it
-            if (is_string($data['checklist_items'])) {
-                $decoded = json_decode($data['checklist_items'], true);
-                $data['checklist_items'] = is_array($decoded) ? $decoded : [];
-            }
-            // If it's already an array, keep it
-            elseif (!is_array($data['checklist_items'])) {
-                $data['checklist_items'] = [];
-            }
-        } else {
-            $data['checklist_items'] = [];
-        }
-
-        // Validate each checklist item has required fields
-        $data['checklist_items'] = array_map(function ($item) {
-            return [
-                'item' => $item['item'] ?? '',
-                'description' => $item['description'] ?? '',
-                'priority' => $item['priority'] ?? 'low',
-            ];
-        }, $data['checklist_items']);
-
-        // Ensure numeric fields are properly typed
-        $data['view_count'] = (int) ($data['view_count'] ?? 0);
-        $data['helpful_count'] = (int) ($data['helpful_count'] ?? 0);
-        $data['estimated_cost_min'] = isset($data['estimated_cost_min']) ? (float) $data['estimated_cost_min'] : null;
-        $data['estimated_cost_max'] = isset($data['estimated_cost_max']) ? (float) $data['estimated_cost_max'] : null;
-        $data['estimated_time_hours'] = isset($data['estimated_time_hours']) ? (float) $data['estimated_time_hours'] : null;
-
-        // Ensure season_info exists (should be appended by model)
-        if (!isset($data['season_info'])) {
-            $data['season_info'] = [
-                'emoji' => '📅',
-                'color' => 'gray',
-                'bg_class' => 'bg-gradient-to-r from-gray-500 to-gray-600',
-            ];
-        }
-
-        // Debug logging (remove in production)
-        if (config('app.debug')) {
-            Log::debug('Formatted checklist', [
-                'id' => $data['id'] ?? 'unknown',
-                'title' => $data['title'] ?? 'unknown',
-                'checklist_items_count' => count($data['checklist_items']),
-                'checklist_items_type' => gettype($data['checklist_items']),
-            ]);
-        }
-
-        return $data;
     }
 
     /**
