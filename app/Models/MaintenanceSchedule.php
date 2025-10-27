@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class MaintenanceSchedule extends Model
@@ -32,9 +33,15 @@ class MaintenanceSchedule extends Model
         'estimated_cost_max' => 'decimal:2',
         'diy_possible' => 'boolean',
         'is_published' => 'boolean',
+        'view_count' => 'integer',
     ];
 
-    protected $appends = ['formatted_interval', 'formatted_cost_range', 'priority_color'];
+    protected $appends = [
+        'formatted_interval',
+        'formatted_cost_range',
+        'priority_color',
+        'helpful_count'
+    ];
 
     protected static function boot()
     {
@@ -43,6 +50,14 @@ class MaintenanceSchedule extends Model
         static::creating(function ($schedule) {
             if (empty($schedule->slug)) {
                 $schedule->slug = Str::slug($schedule->title);
+            }
+        });
+
+        // Ensure tasks is never null when retrieving
+        static::retrieved(function ($schedule) {
+            if ($schedule->tasks === null) {
+                Log::warning("MaintenanceSchedule {$schedule->id} ({$schedule->title}) has null tasks, fixing...");
+                $schedule->tasks = [];
             }
         });
     }
@@ -56,6 +71,7 @@ class MaintenanceSchedule extends Model
     {
         // If null, return empty array
         if (is_null($value)) {
+            Log::debug("MaintenanceSchedule tasks is null for: {$this->title}");
             return [];
         }
 
@@ -67,11 +83,55 @@ class MaintenanceSchedule extends Model
         // If string, try to decode JSON
         if (is_string($value)) {
             $decoded = json_decode($value, true);
+
+            // Check for JSON errors
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                Log::error("JSON decode error for MaintenanceSchedule {$this->id}: " . json_last_error_msg());
+                return [];
+            }
+
             return is_array($decoded) ? $decoded : [];
         }
 
+        // If it's an object (shouldn't happen with proper casting), convert to array
+        if (is_object($value)) {
+            return json_decode(json_encode($value), true) ?: [];
+        }
+
         // Fallback to empty array
+        Log::warning("Unexpected tasks type for MaintenanceSchedule {$this->id}: " . gettype($value));
         return [];
+    }
+
+    /**
+     * Set tasks attribute - ensure proper JSON encoding
+     */
+    public function setTasksAttribute($value)
+    {
+        if (is_null($value)) {
+            $this->attributes['tasks'] = json_encode([]);
+            return;
+        }
+
+        if (is_array($value)) {
+            $this->attributes['tasks'] = json_encode($value);
+            return;
+        }
+
+        if (is_string($value)) {
+            // Validate it's valid JSON
+            $decoded = json_decode($value, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $this->attributes['tasks'] = $value;
+            } else {
+                Log::error("Invalid JSON provided for tasks: {$value}");
+                $this->attributes['tasks'] = json_encode([]);
+            }
+            return;
+        }
+
+        // Fallback
+        $this->attributes['tasks'] = json_encode([]);
     }
 
     public function scopePublished($query)
@@ -146,5 +206,44 @@ class MaintenanceSchedule extends Model
             'critical' => 'red',
             default => 'gray',
         };
+    }
+
+    /**
+     * Get helpful count for this schedule
+     */
+    public function getHelpfulCountAttribute()
+    {
+        return $this->helpfulFeedback()->where('is_helpful', true)->count();
+    }
+
+    /**
+     * Override toArray to ensure tasks is always an array in serialization
+     */
+    public function toArray()
+    {
+        $array = parent::toArray();
+
+        // Double-check tasks is an array before sending to frontend
+        if (!isset($array['tasks']) || !is_array($array['tasks'])) {
+            Log::warning("Tasks is not an array in toArray() for schedule: {$this->title}");
+            $array['tasks'] = [];
+        }
+
+        return $array;
+    }
+
+    /**
+     * Override toJson to ensure proper serialization
+     */
+    public function toJson($options = 0)
+    {
+        $array = $this->toArray();
+
+        // Ensure tasks is present and is an array
+        if (!isset($array['tasks'])) {
+            $array['tasks'] = [];
+        }
+
+        return json_encode($array, $options);
     }
 }

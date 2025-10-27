@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import { motion } from 'framer-motion';
+import { useMemo } from 'react';
 import Navbar from '@/Components/Navbar';
 import Footer from '@/Components/Footer';
 import { ThemeProvider } from '@/contexts/ThemeContext';
@@ -15,10 +16,11 @@ import {
   CheckCircle,
   Share2,
   Download,
-  Clock,
   Wrench,
   User,
+  AlertCircleIcon,
 } from 'lucide-react';
+import { BackButton } from '@/Components/ui/BackButton';
 
 const priorityConfig = {
   low: {
@@ -47,17 +49,76 @@ const priorityConfig = {
   },
 };
 
-export default function ScheduleShow({ schedule, relatedSchedules }: ScheduleShowProps) {
-  const config = priorityConfig[schedule.priority];
+export default function ScheduleShow({ schedule, relatedSchedules = [] }: ScheduleShowProps) {
+  // ✅ DEFENSIVE PROGRAMMING - Safe handling of tasks array
+  const tasks = useMemo(() => {
+
+    // If no schedule or tasks, return empty array
+    if (!schedule?.tasks) {
+      return [];
+    }
+
+    // If tasks is already an array, return it
+    if (Array.isArray(schedule.tasks)) {
+      return schedule.tasks;
+    }
+
+    // If tasks is an object (not array), convert to array
+    if (typeof schedule.tasks === 'object' && schedule.tasks !== null) {
+      return Object.values(schedule.tasks);
+    }
+
+    // If tasks is a string (shouldn't happen but handle it)
+    if (typeof schedule.tasks === 'string') {
+      try {
+        const parsed = JSON.parse(schedule.tasks);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        console.error('❌ Failed to parse tasks JSON:', e);
+        return [];
+      }
+    }
+
+    return [];
+  }, [schedule?.tasks]);
+
+  // Safe access to related schedules
+  const safeRelatedSchedules = useMemo(() => {
+    if (!relatedSchedules) return [];
+    if (Array.isArray(relatedSchedules)) return relatedSchedules;
+    if (typeof relatedSchedules === 'object') return Object.values(relatedSchedules);
+    return [];
+  }, [relatedSchedules]);
+
+  // Check if we have tasks
+  const hasTasks = tasks.length > 0;
+  const hasRelated = safeRelatedSchedules.length > 0;
+
+  // Safe access to schedule properties with defaults
+  const title = schedule?.title || 'Maintenance Schedule';
+  const description = schedule?.description || 'No description available';
+  const priority = schedule?.priority || 'medium';
+  const formattedInterval = schedule?.formatted_interval || 'Unknown interval';
+  const viewCount = schedule?.view_count || 0;
+  const diyPossible = schedule?.diy_possible ?? false;
+  const season = schedule?.season;
+  const formattedCostRange = schedule?.formatted_cost_range || 'Cost varies';
+  const helpfulCount = schedule?.helpful_count || 0;
+  const scheduleId = schedule?.id || 0;
+
+  // Get priority config with fallback
+  const config = priorityConfig[priority] || priorityConfig.medium;
   const PriorityIcon = config.icon;
 
   const handleShare = () => {
     if (navigator.share) {
-      navigator.share({
-        title: schedule.title,
-        text: schedule.description,
-        url: window.location.href,
-      });
+      navigator
+        .share({
+          title,
+          text: description,
+          url: window.location.href,
+        })
+        .catch((err) => console.log('Share failed:', err));
     } else {
       navigator.clipboard.writeText(window.location.href);
       alert('Link copied to clipboard!');
@@ -67,22 +128,14 @@ export default function ScheduleShow({ schedule, relatedSchedules }: ScheduleSho
   return (
     <ThemeProvider>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <Head title={`${schedule.title} - Maintenance Schedules - DriveAssist`} />
+        <Head title={`${title} - Maintenance Schedules - DriveAssist`} />
 
         <Navbar />
 
         <main className="pt-24 pb-16">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            {/* Breadcrumb */}
-            <div className="mb-8">
-              <Link
-                href="/resources/maintenance/schedules"
-                className="inline-flex items-center text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Schedules
-              </Link>
-            </div>
+
+            <BackButton href="/resources/maintenance/schedules" label="Back to Resources" className="mb-6" />
 
             {/* Header */}
             <motion.div
@@ -92,7 +145,7 @@ export default function ScheduleShow({ schedule, relatedSchedules }: ScheduleSho
             >
               {/* Title */}
               <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
-                {schedule.title}
+                {title}
               </h1>
 
               {/* Meta Info */}
@@ -102,23 +155,23 @@ export default function ScheduleShow({ schedule, relatedSchedules }: ScheduleSho
                   className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold border ${config.bg} ${config.color} ${config.border}`}
                 >
                   <PriorityIcon className="w-4 h-4" />
-                  {schedule.priority.charAt(0).toUpperCase() + schedule.priority.slice(1)} Priority
+                  {priority.charAt(0).toUpperCase() + priority.slice(1)} Priority
                 </span>
 
                 {/* Interval */}
                 <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                   <Calendar className="w-4 h-4" />
-                  <span className="font-semibold">{schedule.formatted_interval}</span>
+                  <span className="font-semibold">{formattedInterval}</span>
                 </div>
 
                 {/* Views */}
                 <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                   <Eye className="w-4 h-4" />
-                  <span>{schedule.view_count.toLocaleString()} views</span>
+                  <span>{viewCount.toLocaleString()} views</span>
                 </div>
 
                 {/* DIY Possible */}
-                {schedule.diy_possible && (
+                {diyPossible && (
                   <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
                     <Wrench className="w-4 h-4" />
                     DIY Possible
@@ -127,9 +180,7 @@ export default function ScheduleShow({ schedule, relatedSchedules }: ScheduleSho
               </div>
 
               {/* Description */}
-              <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">
-                {schedule.description}
-              </p>
+              <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">{description}</p>
 
               {/* Actions */}
               <div className="flex flex-wrap gap-3">
@@ -169,16 +220,16 @@ export default function ScheduleShow({ schedule, relatedSchedules }: ScheduleSho
                   <div>
                     <p className="text-xs text-gray-500 dark:text-gray-400">Interval</p>
                     <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                      {schedule.formatted_interval}
+                      {formattedInterval}
                     </p>
                   </div>
                 </div>
 
-                <CostEstimate costRange={schedule.formatted_cost_range} />
+                <CostEstimate costRange={formattedCostRange} />
 
                 <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
                   <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                    {schedule.diy_possible ? (
+                    {diyPossible ? (
                       <Wrench className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                     ) : (
                       <User className="w-4 h-4 text-blue-600 dark:text-blue-400" />
@@ -187,7 +238,7 @@ export default function ScheduleShow({ schedule, relatedSchedules }: ScheduleSho
                   <div>
                     <p className="text-xs text-gray-500 dark:text-gray-400">Service Type</p>
                     <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                      {schedule.diy_possible ? 'DIY or Professional' : 'Professional Required'}
+                      {diyPossible ? 'DIY or Professional' : 'Professional Required'}
                     </p>
                   </div>
                 </div>
@@ -206,25 +257,42 @@ export default function ScheduleShow({ schedule, relatedSchedules }: ScheduleSho
               </h2>
 
               <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {schedule.tasks.map((task, index) => (
-                    <div key={index} className="p-6 flex items-start gap-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                      <div className="flex-shrink-0">
-                        <div className="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
-                          <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+                {hasTasks ? (
+                  <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {tasks.map((task, index) => (
+                      <div
+                        key={task?.id || index}
+                        className="p-6 flex items-start gap-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                      >
+                        <div className="flex-shrink-0">
+                          <div className="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                            <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-gray-900 dark:text-white font-medium">
+                            {task?.description || task?.title || `Task ${index + 1}`}
+                          </p>
                         </div>
                       </div>
-                      <div className="flex-1">
-                        <p className="text-gray-900 dark:text-white font-medium">{task.description}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-12 text-center">
+                    <AlertCircleIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                      No Tasks Available
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      Tasks for this maintenance schedule are currently being updated.
+                    </p>
+                  </div>
+                )}
               </div>
             </motion.div>
 
             {/* Season Info */}
-            {schedule.season && (
+            {season && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -239,7 +307,7 @@ export default function ScheduleShow({ schedule, relatedSchedules }: ScheduleSho
                     </h3>
                     <p className="text-gray-700 dark:text-gray-300">
                       This maintenance schedule is particularly important during{' '}
-                      <span className="font-semibold capitalize">{schedule.season}</span> season.
+                      <span className="font-semibold capitalize">{season}</span> season.
                     </p>
                   </div>
                 </div>
@@ -251,13 +319,13 @@ export default function ScheduleShow({ schedule, relatedSchedules }: ScheduleSho
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className={`${schedule.diy_possible
+              className={`${diyPossible
                 ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
                 : 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800'
                 } rounded-xl p-6 border mb-8`}
             >
               <div className="flex items-start gap-3">
-                {schedule.diy_possible ? (
+                {diyPossible ? (
                   <>
                     <Wrench className="w-6 h-6 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
                     <div>
@@ -265,8 +333,9 @@ export default function ScheduleShow({ schedule, relatedSchedules }: ScheduleSho
                         DIY-Friendly Maintenance
                       </h3>
                       <p className="text-gray-700 dark:text-gray-300 mb-3">
-                        These tasks can typically be performed by car owners with basic tools and mechanical knowledge.
-                        However, if you're not confident, it's always best to consult a professional mechanic.
+                        These tasks can typically be performed by car owners with basic tools and
+                        mechanical knowledge. However, if you're not confident, it's always best to
+                        consult a professional mechanic.
                       </p>
                       <Link
                         href="/resources/maintenance/guides"
@@ -285,8 +354,8 @@ export default function ScheduleShow({ schedule, relatedSchedules }: ScheduleSho
                         Professional Service Required
                       </h3>
                       <p className="text-gray-700 dark:text-gray-300 mb-3">
-                        These tasks require specialized equipment, technical expertise, or diagnostic tools.
-                        We recommend having a certified mechanic perform these services.
+                        These tasks require specialized equipment, technical expertise, or diagnostic
+                        tools. We recommend having a certified mechanic perform these services.
                       </p>
                       <Link
                         href="/experts"
@@ -310,13 +379,13 @@ export default function ScheduleShow({ schedule, relatedSchedules }: ScheduleSho
             >
               <HelpfulFeedback
                 resourceType="schedule"
-                resourceId={schedule.id}
-                helpfulCount={schedule.helpful_count}
+                resourceId={scheduleId}
+                helpfulCount={helpfulCount}
               />
             </motion.div>
 
             {/* Related Schedules */}
-            {relatedSchedules.length > 0 && (
+            {hasRelated && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -327,9 +396,9 @@ export default function ScheduleShow({ schedule, relatedSchedules }: ScheduleSho
                 </h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {relatedSchedules.map((relatedSchedule, index) => (
+                  {safeRelatedSchedules.map((relatedSchedule: any, index) => (
                     <MaintenanceScheduleCard
-                      key={relatedSchedule.id}
+                      key={relatedSchedule.id || index}
                       schedule={relatedSchedule}
                       index={index}
                     />

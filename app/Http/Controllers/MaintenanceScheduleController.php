@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\MaintenanceSchedule;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class MaintenanceScheduleController extends Controller
@@ -51,16 +52,31 @@ class MaintenanceScheduleController extends Controller
         ]);
     }
 
-    public function show($slug)
+    public function show(string $slug)
     {
-        $schedule = MaintenanceSchedule::published()
-            ->where('slug', $slug)
-            ->firstOrFail();
+        $schedule = MaintenanceSchedule::where('slug', $slug)->firstOrFail();
 
         $schedule->incrementViews();
 
+        $scheduleData = $schedule->toArray();
+
+        // If tasks is null, set to empty array
+        if (!isset($scheduleData['tasks']) || $scheduleData['tasks'] === null) {
+            $scheduleData['tasks'] = [];
+        }
+
+        // If tasks is a string, try to decode it
+        if (is_string($scheduleData['tasks'])) {
+            $decoded = json_decode($scheduleData['tasks'], true);
+            $scheduleData['tasks'] = is_array($decoded) ? $decoded : [];
+        }
+
+        if (!is_array($scheduleData['tasks'])) {
+            $scheduleData['tasks'] = [];
+        }
+
         return Inertia::render('Resources/Maintenance/Schedules/Show', [
-            'schedule' => $schedule,
+            'schedule' => $scheduleData,
         ]);
     }
 
