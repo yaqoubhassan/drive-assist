@@ -1,21 +1,21 @@
+import Footer from '@/Components/Footer';
+import Navbar from '@/Components/Navbar';
+import { BackButton } from '@/Components/ui/BackButton';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 import { Head, Link } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import Navbar from '@/Components/Navbar';
-import Footer from '@/Components/Footer';
-import { ThemeProvider } from '@/contexts/ThemeContext';
 import {
-  Wrench,
-  Calendar,
-  Droplets,
   AlertCircle,
-  CheckCircle,
   ArrowRight,
   BookOpen,
+  Calendar,
+  CheckCircle,
   Clock,
+  Droplets,
   Star,
   TrendingUp,
+  Wrench,
 } from 'lucide-react';
-import { BackButton } from '@/Components/BackButton';
 
 // Enhanced Props Interface
 interface MaintenanceIndexProps {

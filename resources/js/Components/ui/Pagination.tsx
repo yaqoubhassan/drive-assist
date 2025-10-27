@@ -21,7 +21,7 @@ interface PaginationProps {
  * - Works with Laravel pagination
  * - Responsive design
  * - Active state styling
- * - Previous/Next navigation
+ * - Previous/Next navigation with icons
  * - Disabled state for unavailable links
  * 
  * Usage:
@@ -48,23 +48,17 @@ export default function Pagination({
       aria-label="Pagination"
     >
       {links.map((link, index) => {
-        const isFirst = index === 0;
-        const isLast = index === links.length - 1;
-        const isPrevious = link.label === '&laquo; Previous';
-        const isNext = link.label === 'Next &raquo;';
+        // Check if this is a previous or next link by label
+        const isPrevious = link.label.includes('Previous') || link.label === '&laquo; Previous';
+        const isNext = link.label.includes('Next') || link.label === 'Next &raquo;';
 
-        // Don't render if it's a previous/next label (we'll use icons)
-        if (isPrevious || isNext) {
-          return null;
-        }
-
-        // Previous button
-        if (isFirst) {
+        // Render Previous button with icon
+        if (isPrevious) {
           return (
             <PaginationButton
               key="prev"
-              href={links[0].url}
-              disabled={!links[0].url}
+              href={link.url}
+              disabled={!link.url}
               aria-label="Previous page"
             >
               <ChevronLeft className="w-5 h-5" />
@@ -72,13 +66,13 @@ export default function Pagination({
           );
         }
 
-        // Next button
-        if (isLast) {
+        // Render Next button with icon
+        if (isNext) {
           return (
             <PaginationButton
               key="next"
-              href={links[links.length - 1].url}
-              disabled={!links[links.length - 1].url}
+              href={link.url}
+              disabled={!link.url}
               aria-label="Next page"
             >
               <ChevronRight className="w-5 h-5" />
@@ -86,7 +80,7 @@ export default function Pagination({
           );
         }
 
-        // Page number buttons
+        // Render page number buttons
         return (
           <PaginationButton
             key={index}
@@ -125,7 +119,7 @@ function PaginationButton({
 
   const activeClasses = active
     ? 'bg-blue-600 text-white shadow-md dark:bg-blue-500'
-    : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700';
+    : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700';
 
   const disabledClasses = disabled
     ? 'opacity-50 cursor-not-allowed'

@@ -1,11 +1,19 @@
-import { Head, Link, router } from '@inertiajs/react';
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import Navbar from '@/Components/Navbar';
 import Footer from '@/Components/Footer';
+import Navbar from '@/Components/Navbar';
+import { BackButton } from '@/Components/ui/BackButton';
 import { ThemeProvider } from '@/contexts/ThemeContext';
-import { Search, Filter, BookOpen, Trophy } from 'lucide-react';
-import { BackButton } from '@/Components/BackButton';
+import { Head, Link, router } from '@inertiajs/react';
+import { motion } from 'framer-motion';
+import { Filter, Trophy } from 'lucide-react';
+import { useState } from 'react';
+
+// Import new UI components
+import {
+  Badge,
+  EmptyState,
+  Pagination,
+  SearchInput,
+} from '@/Components/ui';
 
 interface RoadSign {
   id: number;
@@ -38,17 +46,28 @@ export default function RoadSignsIndex({
 }: Props) {
   const [search, setSearch] = useState(searchQuery);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    router.get(route('road-signs.index'), { search, category: currentCategory }, {
-      preserveState: true,
-    });
+  // Handle search submission
+  const handleSearch = (value: string) => {
+    router.get(
+      route('road-signs.index'),
+      { search: value, category: currentCategory },
+      { preserveState: true }
+    );
   };
 
+  // Handle category change
   const handleCategoryChange = (category: string) => {
-    router.get(route('road-signs.index'), { category, search }, {
-      preserveState: true,
-    });
+    router.get(
+      route('road-signs.index'),
+      { category, search },
+      { preserveState: true }
+    );
+  };
+
+  // Clear all filters
+  const handleClearFilters = () => {
+    setSearch('');
+    router.get(route('road-signs.index'), {}, { preserveState: true });
   };
 
   return (
@@ -60,89 +79,75 @@ export default function RoadSignsIndex({
 
         <main className="pt-20 pb-12">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
+            {/* Back Button */}
             <BackButton href="/resources" label="Back to Resources" className="mb-6" />
-            {/* Header */}
-            <div className="text-center mb-12">
-              <motion.h1
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4"
-              >
+
+            {/* Header Section */}
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-8"
+            >
+              <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
                 Road Signs Guide
-              </motion.h1>
-              <motion.p
+              </h1>
+              <p className="text-lg text-gray-600 dark:text-gray-400">
+                Learn the meaning of road signs and improve your driving knowledge
+              </p>
+            </motion.div>
+
+            {/* Popular Signs Section */}
+            {popularSigns && popularSigns.length > 0 && (
+              <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto"
+                className="mb-8 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-800 rounded-xl p-6 border border-blue-200 dark:border-gray-700"
               >
-                Learn the meaning of road signs to stay safe and informed on the road
-              </motion.p>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-              <Link
-                href={route('road-signs.quiz.index')}
-                className="inline-flex items-center justify-center px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-semibold rounded-lg shadow-md transition-colors"
-              >
-                <Trophy className="w-5 h-5 mr-2" />
-                Take Knowledge Quiz
-              </Link>
-
-              <a
-                href="#browse"
-                className="inline-flex items-center justify-center px-6 py-3 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 font-semibold rounded-lg border-2 border-gray-300 dark:border-gray-600 shadow-md transition-colors"
-              >
-                <BookOpen className="w-5 h-5 mr-2" />
-                Browse All Signs
-              </a>
-            </div>
-
-            {/* Popular Signs */}
-            {popularSigns.length > 0 && (
-              <div className="mb-12">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-                  Most Popular Signs
-                </h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <div className="flex items-center mb-4">
+                  <Trophy className="w-6 h-6 text-yellow-500 mr-2" />
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                    Most Searched Signs
+                  </h2>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                   {popularSigns.map((sign) => (
                     <Link
                       key={sign.id}
                       href={route('road-signs.show', sign.slug)}
-                      className="bg-white dark:bg-gray-800 rounded-lg p-4 hover:shadow-lg transition-shadow group"
+                      className="flex flex-col items-center p-3 bg-white dark:bg-gray-700 rounded-lg hover:shadow-md transition-all group"
                     >
-                      <div className="flex items-center justify-center h-24 mb-2">
-                        <span className="text-5xl group-hover:scale-110 transition-transform">
-                          {sign.image_url}
-                        </span>
-                      </div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-white text-center line-clamp-2">
+                      <span className="text-4xl mb-2 group-hover:scale-110 transition-transform">
+                        {sign.image_url}
+                      </span>
+                      <span className="text-xs text-gray-600 dark:text-gray-400 text-center">
                         {sign.name}
-                      </p>
+                      </span>
                     </Link>
                   ))}
                 </div>
-              </div>
+              </motion.div>
             )}
 
-            {/* Search & Filter Section */}
-            <div id="browse" className="mb-8">
+            {/* Search and Filters Section */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="mb-8"
+            >
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-                {/* Search Bar */}
-                <form onSubmit={handleSearch} className="mb-6">
-                  <div className="relative">
-                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      type="text"
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      placeholder="Search road signs..."
-                      className="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                </form>
+                {/* Search Bar - Using new SearchInput component */}
+                <div className="mb-6">
+                  <SearchInput
+                    value={search}
+                    onChange={setSearch}
+                    onSubmit={handleSearch}
+                    placeholder="Search road signs..."
+                    debounceMs={500}
+                    showClearButton
+                    className="w-full"
+                  />
+                </div>
 
                 {/* Category Filters */}
                 <div className="flex items-center space-x-2 mb-4">
@@ -166,9 +171,9 @@ export default function RoadSignsIndex({
                   ))}
                 </div>
               </div>
-            </div>
+            </motion.div>
 
-            {/* Signs Grid */}
+            {/* Signs Grid or Empty State */}
             {signs.data.length > 0 ? (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
@@ -177,30 +182,25 @@ export default function RoadSignsIndex({
                   ))}
                 </div>
 
-                {/* Pagination */}
-                {signs.last_page > 1 && (
-                  <div className="flex justify-center space-x-2">
-                    {signs.links.map((link, index) => (
-                      <Link
-                        key={index}
-                        href={link.url || '#'}
-                        preserveState
-                        className={`px-4 py-2 rounded-lg ${link.active
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                          } ${!link.url && 'opacity-50 cursor-not-allowed'}`}
-                        dangerouslySetInnerHTML={{ __html: link.label }}
-                      />
-                    ))}
-                  </div>
-                )}
+                {/* Pagination - Using new Pagination component */}
+                <Pagination
+                  links={signs.links}
+                  currentPage={signs.current_page}
+                  lastPage={signs.last_page}
+                  className="mt-8"
+                />
               </>
             ) : (
-              <div className="text-center py-12">
-                <p className="text-gray-600 dark:text-gray-400 text-lg">
-                  No road signs found. Try adjusting your search or filters.
-                </p>
-              </div>
+              /* Empty State - Using new EmptyState component */
+              <EmptyState
+                variant="search"
+                title="No road signs found"
+                description="Try adjusting your search or filters to find what you're looking for."
+                action={{
+                  label: 'Clear Filters',
+                  onClick: handleClearFilters,
+                }}
+              />
             )}
           </div>
         </main>
@@ -211,12 +211,17 @@ export default function RoadSignsIndex({
   );
 }
 
+// Refactored SignCard component using new Badge component
 function SignCard({ sign, index }: { sign: RoadSign; index: number }) {
-  const categoryColors: Record<string, string> = {
-    warning: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-    regulatory: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-    information: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-    guide: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+  // Category variant mapping for Badge component
+  const categoryVariants: Record<
+    string,
+    'warning' | 'error' | 'info' | 'success'
+  > = {
+    warning: 'warning',
+    regulatory: 'error',
+    information: 'info',
+    guide: 'success',
   };
 
   return (
@@ -237,15 +242,17 @@ function SignCard({ sign, index }: { sign: RoadSign; index: number }) {
           {/* Content */}
           <div className="p-4">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+              <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">
                 {sign.name}
               </h3>
-              <span
-                className={`px-2 py-1 text-xs font-medium rounded-full ${categoryColors[sign.category] || 'bg-gray-100 text-gray-800'
-                  }`}
+              {/* Using new Badge component instead of custom span */}
+              <Badge
+                variant={categoryVariants[sign.category] || 'info'}
+                size="sm"
+                className="flex-shrink-0"
               >
                 {sign.category}
-              </span>
+              </Badge>
             </div>
             <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
               {sign.description}

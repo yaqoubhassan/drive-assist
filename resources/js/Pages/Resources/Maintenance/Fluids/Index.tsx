@@ -13,6 +13,7 @@ import {
   Droplets,
   AlertCircle,
 } from 'lucide-react';
+import { BackButton } from '@/Components/ui/BackButton';
 
 const fluidTypes = {
   engine_oil: 'Engine Oil',
@@ -90,16 +91,8 @@ export default function FluidsIndex({
 
         <main className="pt-24 pb-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            {/* Breadcrumb */}
-            <div className="mb-8">
-              <Link
-                href="/resources/maintenance"
-                className="inline-flex items-center text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Maintenance
-              </Link>
-            </div>
+
+            <BackButton href="/resources/maintenance" label="Back to Maintenance" className="mb-6" />
 
             {/* Hero Section */}
             <motion.div

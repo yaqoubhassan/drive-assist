@@ -1,15 +1,15 @@
+import Footer from '@/Components/Footer';
+import Navbar from '@/Components/Navbar';
+import EmptyState from '@/Components/resources/EmptyState';
+import IssueCard from '@/Components/resources/IssueCard';
+import Pagination from '@/Components/resources/Pagination';
+import PopularIssuesSection from '@/Components/resources/PopularIssuesSection';
+import SearchFilters from '@/Components/resources/SearchFilters';
+import { BackButton } from '@/Components/ui/BackButton';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 import { Head, router } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import Navbar from '@/Components/Navbar';
-import Footer from '@/Components/Footer';
-import { ThemeProvider } from '@/contexts/ThemeContext';
 import { Sparkles } from 'lucide-react';
-import IssueCard from '@/Components/resources/IssueCard';
-import SearchFilters from '@/Components/resources/SearchFilters';
-import PopularIssuesSection from '@/Components/resources/PopularIssuesSection';
-import EmptyState from '@/Components/resources/EmptyState';
-import Pagination from '@/Components/resources/Pagination';
-import { BackButton } from '@/Components/BackButton';
 
 interface CarIssue {
   id: number;

@@ -1,23 +1,23 @@
+import Footer from '@/Components/Footer';
+import Navbar from '@/Components/Navbar';
+import { BackButton } from '@/Components/ui/BackButton';
+import { ThemeProvider } from '@/contexts/ThemeContext';
+import { SeasonalChecklist, SeasonalChecklistsIndexProps } from '@/types/maintenance';
 import { Head, Link, router } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { useState } from 'react';
-import Navbar from '@/Components/Navbar';
-import Footer from '@/Components/Footer';
-import { BackButton } from '@/Components/BackButton';
-import { ThemeProvider } from '@/contexts/ThemeContext';
-import { SeasonalChecklistsIndexProps, SeasonalChecklist } from '@/types/maintenance';
 import {
-  Calendar,
-  Clock,
-  DollarSign,
-  Search,
-  Filter,
-  CheckCircle,
-  Eye,
   ArrowRight,
+  Calendar,
+  CheckCircle,
   ChevronLeft,
   ChevronRight,
+  Clock,
+  DollarSign,
+  Eye,
+  Filter,
+  Search,
 } from 'lucide-react';
+import { useState } from 'react';
 
 // Seasonal Checklist Card Component
 interface ChecklistCardProps {

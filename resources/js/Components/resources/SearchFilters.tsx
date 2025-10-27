@@ -54,13 +54,6 @@ export default function SearchFilters({
   const [showSortMenu, setShowSortMenu] = useState(false);
   const sortMenuRef = useRef<HTMLDivElement>(null);
 
-  // Debug: Log categories to console
-  useEffect(() => {
-    console.log('SearchFilters - categories:', categories);
-    console.log('SearchFilters - currentCategory:', currentCategory);
-    console.log('SearchFilters - currentSort:', currentSort);
-  }, [categories, currentCategory, currentSort]);
-
   // Close sort menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

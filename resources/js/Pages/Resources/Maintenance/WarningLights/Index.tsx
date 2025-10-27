@@ -15,6 +15,7 @@ import {
   Eye,
   ArrowRight,
 } from 'lucide-react';
+import { BackButton } from '@/Components/ui';
 
 // Warning Light Card Component
 interface WarningLightCardProps {
@@ -154,6 +155,7 @@ export default function WarningLightsIndex({
 
         <main className="pt-24 pb-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <BackButton href="/resources/maintenance" label="Back to Maintenance" className="mb-6" />
             {/* Hero Section */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
