@@ -198,7 +198,7 @@ export default function SeasonalChecklistsIndex({
   currentSeason = '',
   currentSort = 'season',
 }: SeasonalChecklistsIndexProps) {
-  const [searchInput, setSearchInput] = useState(searchQuery);
+  const [searchInput, setSearchInput] = useState(searchQuery || '');
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

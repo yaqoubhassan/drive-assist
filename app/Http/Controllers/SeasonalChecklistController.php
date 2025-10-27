@@ -14,7 +14,8 @@ class SeasonalChecklistController extends Controller
      */
     public function index(Request $request): Response
     {
-        $search = $request->input('search');
+        // ✅ FIX: Use empty string default instead of null to prevent React warnings
+        $search = $request->input('search', '');
         $season = $request->input('season', 'all');
         $sort = $request->input('sort', 'season');
 
@@ -99,8 +100,10 @@ class SeasonalChecklistController extends Controller
 
     /**
      * Display the specified seasonal checklist
+     * 
+     * ✅ UPDATED: Now includes user voting status to prevent 422 errors
      */
-    public function show($slug): Response
+    public function show(Request $request, $slug): Response
     {
         $checklist = SeasonalChecklist::published()
             ->where('slug', $slug)
@@ -108,6 +111,12 @@ class SeasonalChecklistController extends Controller
 
         // Increment view count
         $checklist->incrementViews();
+
+        // ✅ NEW: Check if user has already voted (by IP address)
+        $ipAddress = $request->ip();
+        $userFeedback = $checklist->helpfulFeedback()
+            ->where('ip_address', $ipAddress)
+            ->first();
 
         // Get related checklists (same season, different checklist)
         $relatedChecklists = SeasonalChecklist::published()
@@ -120,11 +129,16 @@ class SeasonalChecklistController extends Controller
         return Inertia::render('Resources/Maintenance/Seasonal/Show', [
             'checklist' => $checklist,
             'relatedChecklists' => $relatedChecklists,
+            // ✅ NEW: Pass voting status to frontend
+            'userHasVoted' => $userFeedback !== null,
+            'userVotedHelpful' => $userFeedback?->is_helpful ?? null,
         ]);
     }
 
     /**
      * Handle helpful feedback submission
+     * 
+     * ⚠️ NO CHANGES - This method already works correctly
      */
     public function feedback(Request $request, $slug)
     {
@@ -168,6 +182,8 @@ class SeasonalChecklistController extends Controller
 
     /**
      * Get available seasons with display names
+     * 
+     * ⚠️ NO CHANGES - This method already works correctly
      */
     private function getSeasons(): array
     {

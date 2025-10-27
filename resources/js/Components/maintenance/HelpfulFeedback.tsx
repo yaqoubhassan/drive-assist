@@ -1,7 +1,6 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ThumbsUp, ThumbsDown } from 'lucide-react';
-import { router } from '@inertiajs/react';
 import axios from 'axios';
 
 interface HelpfulFeedbackProps {
@@ -9,6 +8,9 @@ interface HelpfulFeedbackProps {
   resourceSlug: string;
   helpfulCount: number;
   className?: string;
+  // ✅ NEW: Accept initial voting status from backend
+  userHasVoted?: boolean;
+  userVotedHelpful?: boolean | null;
 }
 
 export default function HelpfulFeedback({
@@ -16,11 +18,20 @@ export default function HelpfulFeedback({
   resourceSlug,
   helpfulCount,
   className = '',
+  // ✅ NEW: Initialize with backend data
+  userHasVoted = false,
+  userVotedHelpful = null,
 }: HelpfulFeedbackProps) {
-  const [isHelpful, setIsHelpful] = useState<boolean | null>(null);
+  // ✅ UPDATED: Initialize state with backend data
+  const [isHelpful, setIsHelpful] = useState<boolean | null>(
+    userHasVoted ? userVotedHelpful : null
+  );
   const [currentCount, setCurrentCount] = useState(helpfulCount);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(
+    // ✅ Show message if user already voted
+    userHasVoted ? 'You have already provided feedback for this resource' : null
+  );
 
   // Map resource types to their proper route paths
   const getEndpoint = (type: string, slug: string): string => {
@@ -41,7 +52,13 @@ export default function HelpfulFeedback({
   };
 
   const handleFeedback = async (helpful: boolean) => {
-    if (isSubmitting || isHelpful !== null) return;
+    // ✅ Prevent submission if already voted
+    if (isSubmitting || isHelpful !== null) {
+      if (isHelpful !== null && !errorMessage) {
+        setErrorMessage('You have already provided feedback for this resource');
+      }
+      return;
+    }
 
     setIsSubmitting(true);
     setErrorMessage(null);
@@ -147,7 +164,8 @@ export default function HelpfulFeedback({
           </motion.button>
         </div>
 
-        {isHelpful === true && !errorMessage && (
+        {/* Success Message - Only show if voted successfully (not from initial load) */}
+        {isHelpful === true && !errorMessage && !userHasVoted && (
           <motion.span
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
@@ -157,7 +175,7 @@ export default function HelpfulFeedback({
           </motion.span>
         )}
 
-        {isHelpful === false && !errorMessage && (
+        {isHelpful === false && !errorMessage && !userHasVoted && (
           <motion.span
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
@@ -168,7 +186,7 @@ export default function HelpfulFeedback({
         )}
       </div>
 
-      {/* Error Message */}
+      {/* Error/Info Message */}
       {errorMessage && (
         <motion.div
           initial={{ opacity: 0, y: -5 }}
