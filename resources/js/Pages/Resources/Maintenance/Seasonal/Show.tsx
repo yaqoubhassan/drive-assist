@@ -22,6 +22,7 @@ import {
   ArrowRight,
   Circle,
 } from 'lucide-react';
+import { BackButton } from '@/Components/ui';
 
 // ============================================================================
 // DEFENSIVE HELPER FUNCTIONS
@@ -226,22 +227,10 @@ export default function SeasonalChecklistShow({
         <Head title={`${checklist.title} | DriveAssist`} />
         <Navbar />
 
-        <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+
           <div className="max-w-4xl mx-auto">
-            {/* Back Button */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="mb-8"
-            >
-              <Link
-                href="/resources/maintenance/seasonal"
-                className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-              >
-                <ChevronLeft className="w-4 h-4" />
-                Back to Seasonal Checklists
-              </Link>
-            </motion.div>
+            <BackButton href="/resources/maintenance/seasonal" label="Back to Seasonal Checklists" className="mb-6 mt-10" />
 
             {/* Header */}
             <motion.div
