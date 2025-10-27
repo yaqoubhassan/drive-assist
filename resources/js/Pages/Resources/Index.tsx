@@ -112,12 +112,6 @@ export default function ResourcesIndex() {
     },
   ];
 
-  const fadeInUp = {
-    initial: { opacity: 0, y: 20 },
-    animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.6 },
-  };
-
   const staggerContainer = {
     animate: {
       transition: {
@@ -209,15 +203,17 @@ export default function ResourcesIndex() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: index * 0.1 }}
-                    className="text-center"
+                    className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all"
                   >
-                    <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <benefit.icon className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+                    <div className="text-center">
+                      <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <benefit.icon className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                        {benefit.title}
+                      </h3>
+                      <p className="text-gray-600 dark:text-gray-400">{benefit.description}</p>
                     </div>
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                      {benefit.title}
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-400">{benefit.description}</p>
                   </motion.div>
                 ))}
               </div>
@@ -245,7 +241,7 @@ export default function ResourcesIndex() {
                 variants={staggerContainer}
                 initial="initial"
                 animate={isInView ? 'animate' : 'initial'}
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch"
               >
                 {categories.map((category, index) => (
                   <CategoryCard key={index} category={category} index={index} />
@@ -255,7 +251,7 @@ export default function ResourcesIndex() {
           </section>
 
           {/* CTA Section */}
-          <section className="py-20 bg-gradient-to-r from-blue-600 to-purple-600 relative overflow-hidden">
+          <section className="py-20 bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-700 dark:to-purple-700 relative overflow-hidden">
             <div className="absolute inset-0 opacity-10">
               <div
                 className="absolute inset-0"
@@ -284,16 +280,19 @@ export default function ResourcesIndex() {
                   Get instant AI-powered diagnosis or connect with verified local experts.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  {/* Primary CTA Button - White with colored text */}
                   <Link
                     href="/diagnose"
-                    className="inline-flex items-center justify-center px-8 py-4 bg-white text-blue-600 font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all hover:scale-105"
+                    className="group inline-flex items-center justify-center gap-2 px-8 py-4 bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all hover:scale-105"
                   >
                     Diagnose Issue
-                    <ArrowRight className="ml-2 w-5 h-5" />
+                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                   </Link>
+
+                  {/* Secondary CTA Button - Transparent with border */}
                   <Link
                     href="/experts"
-                    className="inline-flex items-center justify-center px-8 py-4 bg-transparent border-2 border-white text-white font-semibold rounded-lg hover:bg-white/10 transition-all"
+                    className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-transparent border-2 border-white text-white font-semibold rounded-lg hover:bg-white/10 transition-all"
                   >
                     Find Expert
                   </Link>
@@ -329,49 +328,50 @@ function CategoryCard({ category, index }: { category: ResourceCategory; index: 
   };
 
   return (
-    <motion.div variants={itemVariants}>
+    <motion.div variants={itemVariants} className="h-full">
       <Link href={category.href}>
         <motion.div
           whileHover={{ y: -8, boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}
-          className="bg-white dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-700 transition-all h-full group cursor-pointer"
+          className="bg-white dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-700 transition-all group cursor-pointer h-full min-h-[400px] flex flex-col"
         >
-          {/* Icon & Stats */}
+          {/* Icon & Stats - Fixed height section */}
           <div className="flex items-start justify-between mb-4">
             <motion.div
               whileHover={{ rotate: 360 }}
               transition={{ duration: 0.5 }}
-              className={`w-14 h-14 rounded-full flex items-center justify-center ${colorClasses[category.color]
-                }`}
+              className={`w-14 h-14 rounded-full flex items-center justify-center ${colorClasses[category.color]}`}
             >
               <category.icon className="w-7 h-7" />
             </motion.div>
             {category.stats && (
-              <span className="text-sm font-semibold text-gray-500 dark:text-gray-400">
+              <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 px-3 py-1 bg-gray-100 dark:bg-gray-800/80 rounded-full border border-gray-200 dark:border-gray-700">
                 {category.stats}
               </span>
             )}
           </div>
 
-          {/* Title & Description */}
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+          {/* Title - Max 2 lines */}
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors min-h-[56px] line-clamp-2">
             {category.title}
           </h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm leading-relaxed">
+
+          {/* Description - Max 3 lines */}
+          <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm leading-relaxed min-h-[60px] line-clamp-3">
             {category.description}
           </p>
 
-          {/* Features */}
-          <ul className="space-y-2 mb-4">
+          {/* Features - Grows to fill remaining space */}
+          <ul className="space-y-2 mb-4 flex-grow">
             {category.features.slice(0, 3).map((feature, idx) => (
-              <li key={idx} className="flex items-center text-sm text-gray-700 dark:text-gray-300">
-                <div className="w-1.5 h-1.5 bg-blue-600 dark:bg-blue-400 rounded-full mr-2" />
-                {feature}
+              <li key={idx} className="flex items-start text-sm text-gray-700 dark:text-gray-300">
+                <div className="w-1.5 h-1.5 bg-blue-600 dark:bg-blue-400 rounded-full mr-2 flex-shrink-0 mt-1.5" />
+                <span className="line-clamp-1">{feature}</span>
               </li>
             ))}
           </ul>
 
-          {/* Link */}
-          <div className="flex items-center text-blue-600 dark:text-blue-400 font-semibold group-hover:gap-2 transition-all">
+          {/* Footer - Always at bottom */}
+          <div className="flex items-center text-blue-600 dark:text-blue-400 font-semibold group-hover:gap-2 transition-all mt-auto pt-4 border-t border-gray-100 dark:border-gray-800">
             Explore
             <motion.div initial={{ x: 0 }} whileHover={{ x: 5 }} transition={{ duration: 0.2 }}>
               <ArrowRight className="w-4 h-4 ml-1" />
