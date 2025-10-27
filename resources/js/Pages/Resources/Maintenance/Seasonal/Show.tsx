@@ -487,7 +487,7 @@ export default function SeasonalChecklistShow({
             >
               <HelpfulFeedback
                 resourceType="checklist"
-                resourceId={checklist.id}
+                resourceSlug={checklist.slug}
                 helpfulCount={checklist.helpful_count || 0}
               />
             </motion.div>
