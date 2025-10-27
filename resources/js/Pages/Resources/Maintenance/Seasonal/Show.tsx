@@ -21,6 +21,7 @@ import {
   Eye,
   ArrowRight,
   Circle,
+  ThumbsUp,
 } from 'lucide-react';
 import { BackButton } from '@/Components/ui';
 
@@ -236,30 +237,33 @@ export default function SeasonalChecklistShow({
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white dark:bg-gray-800 rounded-xl p-8 border border-gray-200 dark:border-gray-700 mb-8"
+              className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-8 border border-gray-200 dark:border-gray-700 mb-8"
             >
               {/* Season Badge */}
-              <div className="flex items-center gap-2 mb-4">
+              <div className="flex flex-wrap items-center gap-2 mb-4">
                 <span
-                  className={`inline-flex items-center px-4 py-2 rounded-full text-base font-medium ${checklist.season_info.bg_class
-                    } text-white`}
+                  className={`inline-flex items-center px-3 sm:px-4 py-2 rounded-full text-sm sm:text-base font-medium ${checklist.season_info.bg_class} text-white`}
                 >
-                  <span className="text-2xl mr-2">{checklist.season_info.emoji}</span>
+                  <span className="text-xl sm:text-2xl mr-2">{checklist.season_info.emoji}</span>
                   {checklist.season?.charAt(0).toUpperCase() + checklist.season?.slice(1) || 'Season'} Maintenance
                 </span>
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300">
+                <span className="inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300">
                   <Eye className="w-3 h-3 mr-1" />
                   {checklist.view_count?.toLocaleString() || 0} views
                 </span>
+                <div className='inline-flex gap-1 items-center px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium'>
+                  <ThumbsUp className="w-3 sm:w-4 h-3 sm:h-4 flex-shrink-0 text-green-500 dark:text-green-400" />
+                  <span>{checklist.helpful_count?.toLocaleString() || 0}</span>
+                </div>
               </div>
 
               {/* Title */}
-              <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
                 {checklist.title}
               </h1>
 
               {/* Description */}
-              <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">
+              <p className="text-base sm:text-lg text-gray-600 dark:text-gray-400 mb-6">
                 {checklist.description}
               </p>
 
@@ -267,7 +271,7 @@ export default function SeasonalChecklistShow({
               <div className="flex flex-wrap gap-3">
                 <button
                   onClick={handleShare}
-                  className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
                   <Share2 className="w-4 h-4" />
                   <span>Share</span>
@@ -275,7 +279,7 @@ export default function SeasonalChecklistShow({
 
                 <button
                   onClick={() => window.print()}
-                  className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
                   <Download className="w-4 h-4" />
                   <span>Print Checklist</span>

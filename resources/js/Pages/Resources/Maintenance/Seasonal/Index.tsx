@@ -7,15 +7,13 @@ import { Head, Link, router } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import {
   ArrowRight,
-  Calendar,
   CheckCircle,
-  ChevronLeft,
-  ChevronRight,
   Clock,
   DollarSign,
   Eye,
   Filter,
   Search,
+  ThumbsUp,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -158,7 +156,13 @@ function ChecklistCard({ checklist, index }: ChecklistCardProps) {
               <div className="flex items-center gap-1">
                 <Eye className="w-4 h-4 flex-shrink-0" />
                 <span className="truncate">
-                  {checklist.view_count.toLocaleString()} views
+                  {checklist.view_count?.toLocaleString() ?? 0} views
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <ThumbsUp className="w-4 h-4 flex-shrink-0 text-green-500 dark:text-green-400" />
+                <span className="truncate">
+                  {checklist.helpful_count?.toLocaleString() ?? 0} helpful
                 </span>
               </div>
             </div>
@@ -167,7 +171,6 @@ function ChecklistCard({ checklist, index }: ChecklistCardProps) {
             {checklist.formatted_cost_range && (
               <div className="bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800 rounded-lg p-2">
                 <div className="flex items-center gap-2">
-                  <DollarSign className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0" />
                   <span className="text-sm font-semibold text-green-900 dark:text-green-200 truncate">
                     {checklist.formatted_cost_range}
                   </span>
