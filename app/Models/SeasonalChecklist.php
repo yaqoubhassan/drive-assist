@@ -22,6 +22,7 @@ class SeasonalChecklist extends Model
         'estimated_cost_max',
         'estimated_time_hours',
         'view_count',
+        'helpful_count',
         'is_published',
     ];
 
@@ -29,6 +30,9 @@ class SeasonalChecklist extends Model
         'checklist_items' => 'array',
         'estimated_cost_min' => 'decimal:2',
         'estimated_cost_max' => 'decimal:2',
+        'estimated_time_hours' => 'decimal:1',
+        'view_count' => 'integer',
+        'helpful_count' => 'integer',
         'is_published' => 'boolean',
     ];
 
@@ -45,57 +49,107 @@ class SeasonalChecklist extends Model
         });
     }
 
+    /**
+     * Accessor to ensure checklist_items is ALWAYS an array
+     * This prevents frontend crashes when the data isn't properly formatted
+     */
+    public function getChecklistItemsAttribute($value)
+    {
+        // If the attribute is accessed through Eloquent and already cast
+        $attributeValue = $this->getAttributeFromArray('checklist_items');
+
+        // If it's already an array, return it
+        if (is_array($attributeValue)) {
+            return $attributeValue;
+        }
+
+        // If it's a string (raw JSON from database), decode it
+        if (is_string($attributeValue)) {
+            $decoded = json_decode($attributeValue, true);
+            return is_array($decoded) ? $decoded : [];
+        }
+
+        // Fallback to empty array
+        return [];
+    }
+
+    /**
+     * Query scope for published checklists
+     */
     public function scopePublished($query)
     {
         return $query->where('is_published', true);
     }
 
+    /**
+     * Query scope to filter by season
+     */
     public function scopeBySeason($query, $season)
     {
         return $query->where('season', $season);
     }
 
+    /**
+     * Increment view count
+     */
     public function incrementViews()
     {
         $this->increment('view_count');
     }
 
+    /**
+     * Increment helpful count
+     */
+    public function incrementHelpful()
+    {
+        $this->increment('helpful_count');
+    }
+
+    /**
+     * Relationship: Helpful feedback
+     */
     public function helpfulFeedback()
     {
         return $this->morphMany(MaintenanceHelpfulFeedback::class, 'feedbackable');
     }
 
+    /**
+     * Accessor: Season info with emoji and colors
+     */
     public function getSeasonInfoAttribute()
     {
         return match ($this->season) {
             'spring' => [
                 'emoji' => '🌸',
                 'color' => 'green',
-                'bg_class' => 'from-green-500 to-green-600',
+                'bg_class' => 'bg-gradient-to-r from-green-500 to-green-600',
             ],
             'summer' => [
                 'emoji' => '☀️',
                 'color' => 'yellow',
-                'bg_class' => 'from-yellow-500 to-yellow-600',
+                'bg_class' => 'bg-gradient-to-r from-yellow-500 to-yellow-600',
             ],
             'fall' => [
                 'emoji' => '🍂',
                 'color' => 'orange',
-                'bg_class' => 'from-orange-500 to-orange-600',
+                'bg_class' => 'bg-gradient-to-r from-orange-500 to-orange-600',
             ],
             'winter' => [
                 'emoji' => '❄️',
                 'color' => 'blue',
-                'bg_class' => 'from-blue-500 to-blue-600',
+                'bg_class' => 'bg-gradient-to-r from-blue-500 to-blue-600',
             ],
             default => [
                 'emoji' => '📅',
                 'color' => 'gray',
-                'bg_class' => 'from-gray-500 to-gray-600',
+                'bg_class' => 'bg-gradient-to-r from-gray-500 to-gray-600',
             ],
         };
     }
 
+    /**
+     * Accessor: Formatted cost range
+     */
     public function getFormattedCostRangeAttribute()
     {
         if (!$this->estimated_cost_min && !$this->estimated_cost_max) {
@@ -109,16 +163,34 @@ class SeasonalChecklist extends Model
         return '$' . number_format($this->estimated_cost_min ?? $this->estimated_cost_max, 0);
     }
 
+    /**
+     * Accessor: Formatted time
+     */
     public function getFormattedTimeAttribute()
     {
         if (!$this->estimated_time_hours) {
-            return 'Varies';
+            return 'Time varies';
         }
 
-        if ($this->estimated_time_hours == 1) {
+        $hours = $this->estimated_time_hours;
+
+        if ($hours < 1) {
+            return round($hours * 60) . ' minutes';
+        } elseif ($hours == 1) {
             return '1 hour';
-        }
+        } elseif ($hours < 24) {
+            return number_format($hours, 1) . ' hours';
+        } else {
+            $days = floor($hours / 24);
+            $remainingHours = $hours % 24;
 
-        return "{$this->estimated_time_hours} hours";
+            $formatted = $days . ' ' . ($days == 1 ? 'day' : 'days');
+
+            if ($remainingHours > 0) {
+                $formatted .= ' ' . number_format($remainingHours, 1) . ' hours';
+            }
+
+            return $formatted;
+        }
     }
 }
