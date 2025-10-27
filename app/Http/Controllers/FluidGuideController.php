@@ -20,15 +20,36 @@ class FluidGuideController extends Controller
             });
         }
 
-        // Sort by criticality first, then alphabetically
-        $query->orderBy('is_critical', 'desc')
-            ->orderBy('name', 'asc');
+        // Filter by fluid type
+        if ($request->has('type') && $request->type) {
+            $query->where('name', 'like', "%{$request->type}%")
+                ->orWhere('description', 'like', "%{$request->type}%")
+                ->orWhere('fluid_type', 'like', "%{$request->type}%");
+        }
+
+        // Sorting
+        $sort = $request->get('sort', 'critical');
+        switch ($sort) {
+            case 'popular':
+                $query->orderBy('view_count', 'desc');
+                break;
+            case 'alphabetical':
+                $query->orderBy('name', 'asc');
+                break;
+            case 'critical':
+            default:
+                $query->orderBy('is_critical', 'desc')
+                    ->orderBy('name', 'asc');
+                break;
+        }
 
         $fluids = $query->paginate(12)->withQueryString();
 
         return Inertia::render('Resources/Maintenance/Fluids/Index', [
             'fluids' => $fluids,
             'searchQuery' => $request->get('search', ''),
+            'currentType' => $request->get('type', ''),
+            'currentSort' => $request->get('sort', 'critical'),
             'criticalFluids' => FluidGuide::published()
                 ->critical()
                 ->orderBy('name', 'asc')
