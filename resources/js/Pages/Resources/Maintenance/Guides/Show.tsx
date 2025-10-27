@@ -10,7 +10,6 @@ import MaintenanceGuideCard from '@/Components/maintenance/MaintenanceGuideCard'
 import DifficultyBadge from '@/Components/maintenance/DifficultyBadge';
 import HelpfulFeedback from '@/Components/maintenance/HelpfulFeedback';
 import {
-  ArrowLeft,
   Clock,
   DollarSign,
   Eye,
@@ -19,8 +18,10 @@ import {
   AlertTriangle,
   Download,
   Share2,
+  ThumbsUp, // ✅ Added for helpful count
 } from 'lucide-react';
 import { GuideShowProps } from '@/types/maintenance';
+import { BackButton } from '@/Components/ui';
 
 // ============================================================================
 // DEFENSIVE HELPER FUNCTION - Ensures arrays are never null/undefined
@@ -61,6 +62,8 @@ export default function GuideShow({ guide, relatedGuides }: GuideShowProps) {
   // STATE MANAGEMENT
   // ============================================================================
   const [shareMessage, setShareMessage] = useState<string | null>(null);
+  // ✅ NEW: Track helpful count updates
+  const [currentHelpfulCount, setCurrentHelpfulCount] = useState(safeGuide.helpful_count);
 
   // ============================================================================
   // HANDLERS
@@ -91,6 +94,11 @@ export default function GuideShow({ guide, relatedGuides }: GuideShowProps) {
     setShareMessage('Link copied to clipboard!');
   };
 
+  // ✅ NEW: Handler to update helpful count when feedback is submitted
+  const handleHelpfulCountUpdate = (newCount: number) => {
+    setCurrentHelpfulCount(newCount);
+  };
+
   // ============================================================================
   // RENDER
   // ============================================================================
@@ -104,13 +112,8 @@ export default function GuideShow({ guide, relatedGuides }: GuideShowProps) {
         <main className="pt-24 pb-16">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             {/* Back Button */}
-            <Link
-              href="/resources/maintenance/guides"
-              className="inline-flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline mb-6"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Back to Guides</span>
-            </Link>
+
+            <BackButton href="/resources/maintenance/guides" label="Back to Guides" className="mb-6 mt-10" />
 
             {/* Header Section */}
             <motion.div
@@ -141,7 +144,6 @@ export default function GuideShow({ guide, relatedGuides }: GuideShowProps) {
 
                 {safeGuide.formatted_cost_range && (
                   <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                    <DollarSign className="w-4 h-4" />
                     <span>{safeGuide.formatted_cost_range}</span>
                   </div>
                 )}
@@ -150,6 +152,14 @@ export default function GuideShow({ guide, relatedGuides }: GuideShowProps) {
                   <Eye className="w-4 h-4" />
                   <span>{safeGuide.view_count.toLocaleString()} views</span>
                 </div>
+
+                {/* ✅ NEW: Helpful Count Display */}
+                {currentHelpfulCount > 0 && (
+                  <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                    <ThumbsUp className="w-4 h-4" />
+                    <span>{currentHelpfulCount.toLocaleString()} helpful</span>
+                  </div>
+                )}
               </div>
 
               {/* Description */}
@@ -391,8 +401,9 @@ export default function GuideShow({ guide, relatedGuides }: GuideShowProps) {
             >
               <HelpfulFeedback
                 resourceType="guide"
-                resourceId={safeGuide.id}
-                helpfulCount={safeGuide.helpful_count}
+                resourceSlug={safeGuide.slug}
+                helpfulCount={currentHelpfulCount}
+                onCountUpdate={handleHelpfulCountUpdate}
               />
             </motion.div>
 

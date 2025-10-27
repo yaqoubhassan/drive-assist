@@ -379,7 +379,7 @@ export default function ScheduleShow({ schedule, relatedSchedules = [] }: Schedu
             >
               <HelpfulFeedback
                 resourceType="schedule"
-                resourceId={scheduleId}
+                resourceSlug={scheduleId.toString()}
                 helpfulCount={helpfulCount}
               />
             </motion.div>

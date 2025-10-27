@@ -15,11 +15,11 @@ import {
   CheckCircle,
   Share2,
   Download,
-  Clock,
   Calendar,
   AlertCircle,
   Wrench,
 } from 'lucide-react';
+import { useState } from 'react';
 
 export default function FluidShow({ fluid, relatedFluids }: FluidShowProps) {
   const handleShare = () => {
@@ -33,6 +33,11 @@ export default function FluidShow({ fluid, relatedFluids }: FluidShowProps) {
       navigator.clipboard.writeText(window.location.href);
       alert('Link copied to clipboard!');
     }
+  };
+  const [currentHelpfulCount, setCurrentHelpfulCount] = useState(fluid.helpful_count);
+
+  const handleHelpfulCountUpdate = (newCount: number) => {
+    setCurrentHelpfulCount(newCount);
   };
 
   return (
@@ -297,8 +302,9 @@ export default function FluidShow({ fluid, relatedFluids }: FluidShowProps) {
             >
               <HelpfulFeedback
                 resourceType="fluid"
-                resourceId={fluid.id}
-                helpfulCount={fluid.helpful_count}
+                resourceSlug={fluid.slug}
+                helpfulCount={currentHelpfulCount}
+                onCountUpdate={handleHelpfulCountUpdate}
               />
             </motion.div>
 

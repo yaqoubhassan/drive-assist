@@ -354,7 +354,7 @@ export default function WarningLightShow({ warningLight, relatedLights }: Warnin
             >
               <HelpfulFeedback
                 resourceType="warning-light"
-                resourceId={warningLight.id}
+                resourceSlug={warningLight.slug}
                 helpfulCount={warningLight.helpful_count}
               />
             </motion.div>

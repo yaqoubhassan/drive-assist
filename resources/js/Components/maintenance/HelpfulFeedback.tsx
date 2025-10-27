@@ -1,3 +1,5 @@
+// resources/js/Components/maintenance/HelpfulFeedback.tsx
+
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ThumbsUp, ThumbsDown } from 'lucide-react';
@@ -8,9 +10,10 @@ interface HelpfulFeedbackProps {
   resourceSlug: string;
   helpfulCount: number;
   className?: string;
-  // ✅ NEW: Accept initial voting status from backend
   userHasVoted?: boolean;
   userVotedHelpful?: boolean | null;
+  // ✅ NEW: Callback to update parent component's count
+  onCountUpdate?: (newCount: number) => void;
 }
 
 export default function HelpfulFeedback({
@@ -18,18 +21,16 @@ export default function HelpfulFeedback({
   resourceSlug,
   helpfulCount,
   className = '',
-  // ✅ NEW: Initialize with backend data
   userHasVoted = false,
   userVotedHelpful = null,
+  onCountUpdate, // ✅ NEW: Optional callback
 }: HelpfulFeedbackProps) {
-  // ✅ UPDATED: Initialize state with backend data
   const [isHelpful, setIsHelpful] = useState<boolean | null>(
     userHasVoted ? userVotedHelpful : null
   );
   const [currentCount, setCurrentCount] = useState(helpfulCount);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(
-    // ✅ Show message if user already voted
     userHasVoted ? 'You have already provided feedback for this resource' : null
   );
 
@@ -52,7 +53,6 @@ export default function HelpfulFeedback({
   };
 
   const handleFeedback = async (helpful: boolean) => {
-    // ✅ Prevent submission if already voted
     if (isSubmitting || isHelpful !== null) {
       if (isHelpful !== null && !errorMessage) {
         setErrorMessage('You have already provided feedback for this resource');
@@ -70,10 +70,9 @@ export default function HelpfulFeedback({
       console.log('🔄 Submitting feedback to:', endpoint);
       console.log('📝 Data:', { is_helpful: helpful, comment: null });
 
-      // Use the correct parameter name expected by backend
       const response = await axios.post(endpoint, {
         is_helpful: helpful,
-        comment: null, // Optional comment field
+        comment: null,
       }, {
         headers: {
           'X-CSRF-TOKEN': csrfToken,
@@ -85,23 +84,27 @@ export default function HelpfulFeedback({
       console.log('✅ Success response:', response.data);
 
       setIsHelpful(helpful);
+
       if (helpful) {
-        setCurrentCount(response.data.helpful_count || currentCount + 1);
+        const newCount = response.data.helpful_count || currentCount + 1;
+        setCurrentCount(newCount);
+
+        // ✅ NEW: Notify parent component of count update
+        if (onCountUpdate) {
+          onCountUpdate(newCount);
+        }
       }
     } catch (error: any) {
       console.error('❌ Error submitting feedback:', error);
       console.error('📋 Error response:', error.response?.data);
 
-      // Handle already voted error gracefully
       if (error.response?.status === 422) {
         const errorData = error.response.data;
 
-        // Check if it's an "already voted" error
         if (errorData.already_voted) {
           setErrorMessage('You have already provided feedback for this resource');
-          setIsHelpful(true); // Assume they voted yes before
+          setIsHelpful(true);
         } else if (errorData.errors) {
-          // Validation errors
           const firstError = Object.values(errorData.errors)[0];
           setErrorMessage(Array.isArray(firstError) ? firstError[0] : 'Validation error occurred');
         } else if (errorData.message) {
@@ -110,7 +113,6 @@ export default function HelpfulFeedback({
           setErrorMessage('Unable to submit feedback. Please try again.');
         }
       } else if (error.response?.status === 419) {
-        // CSRF token mismatch
         setErrorMessage('Session expired. Please refresh the page and try again.');
       } else {
         setErrorMessage('Failed to submit feedback. Please try again.');
@@ -164,7 +166,7 @@ export default function HelpfulFeedback({
           </motion.button>
         </div>
 
-        {/* Success Message - Only show if voted successfully (not from initial load) */}
+        {/* Success Message */}
         {isHelpful === true && !errorMessage && !userHasVoted && (
           <motion.span
             initial={{ opacity: 0, x: -10 }}

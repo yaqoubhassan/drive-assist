@@ -7,7 +7,6 @@ import { ThemeProvider } from '@/contexts/ThemeContext';
 import HelpfulFeedback from '@/Components/maintenance/HelpfulFeedback';
 import { SeasonalChecklistShowProps, SeasonalChecklist } from '@/types/maintenance';
 import {
-  Calendar,
   Clock,
   DollarSign,
   CheckCircle,
@@ -17,10 +16,8 @@ import {
   Lightbulb,
   Share2,
   Download,
-  ChevronLeft,
   Eye,
   ArrowRight,
-  Circle,
   ThumbsUp,
 } from 'lucide-react';
 import { BackButton } from '@/Components/ui';
