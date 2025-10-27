@@ -9,6 +9,7 @@ import SearchFilters from '@/Components/resources/SearchFilters';
 import PopularIssuesSection from '@/Components/resources/PopularIssuesSection';
 import EmptyState from '@/Components/resources/EmptyState';
 import Pagination from '@/Components/resources/Pagination';
+import { BackButton } from '@/Components/BackButton';
 
 interface CarIssue {
   id: number;
@@ -70,6 +71,9 @@ export default function CarIssuesIndex({
 
         <main className="pt-20 md:pt-24 pb-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+            <BackButton href="/resources" label="Back to Resources" className="mb-6" />
+
             {/* Hero Section */}
             <div className="text-center mb-12 md:mb-16">
               <motion.div

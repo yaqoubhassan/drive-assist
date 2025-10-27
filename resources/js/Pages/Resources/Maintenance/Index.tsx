@@ -12,10 +12,10 @@ import {
   ArrowRight,
   BookOpen,
   Clock,
-  DollarSign,
   Star,
   TrendingUp,
 } from 'lucide-react';
+import { BackButton } from '@/Components/BackButton';
 
 // Enhanced Props Interface
 interface MaintenanceIndexProps {
@@ -158,6 +158,7 @@ export default function MaintenanceIndex({
 
         <main className="pt-24 pb-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <BackButton href="/resources" label="Back to Resources" className="mb-6" />
             {/* Hero Section */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}

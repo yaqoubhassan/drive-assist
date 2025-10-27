@@ -5,6 +5,7 @@ import Navbar from '@/Components/Navbar';
 import Footer from '@/Components/Footer';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { Search, Filter, BookOpen, Trophy } from 'lucide-react';
+import { BackButton } from '@/Components/BackButton';
 
 interface RoadSign {
   id: number;
@@ -59,6 +60,8 @@ export default function RoadSignsIndex({
 
         <main className="pt-20 pb-12">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+            <BackButton href="/resources" label="Back to Resources" className="mb-6" />
             {/* Header */}
             <div className="text-center mb-12">
               <motion.h1

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useState } from 'react';
 import Navbar from '@/Components/Navbar';
 import Footer from '@/Components/Footer';
+import { BackButton } from '@/Components/BackButton';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { SeasonalChecklistsIndexProps, SeasonalChecklist } from '@/types/maintenance';
 import {
@@ -150,192 +151,218 @@ export default function SeasonalChecklistsIndex({
 
   return (
     <ThemeProvider>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
-        <Head title="Seasonal Maintenance Checklists - DriveAssist Resources" />
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <Head title="Seasonal Maintenance Checklists - DriveAssist" />
 
         <Navbar />
 
-        {/* Hero Section */}
-        <div className="bg-gradient-to-br from-blue-600 to-purple-700 dark:from-blue-900 dark:to-purple-900 text-white py-16">
+        <main className="pt-24 pb-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            {/* Back Button */}
+            <BackButton
+              href="/resources/maintenance"
+              label="Back to Maintenance"
+              className="mb-8"
+            />
+
+            {/* Hero Section */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-center"
+              className="text-center mb-12"
             >
-              <Calendar className="w-16 h-16 mx-auto mb-4" />
-              <h1 className="text-4xl md:text-5xl font-bold mb-4">
+              <div className="flex justify-center mb-6">
+                <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center shadow-lg">
+                  <Calendar className="w-8 h-8 text-white" />
+                </div>
+              </div>
+
+              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
                 Seasonal Maintenance Checklists
               </h1>
-              <p className="text-xl text-blue-100 dark:text-blue-200 max-w-3xl mx-auto">
+
+              <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
                 Prepare your vehicle for every season with comprehensive maintenance checklists
+                and expert recommendations.
               </p>
             </motion.div>
-          </div>
-        </div>
 
-        {/* Search and Filters */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-8">
-            {/* Search Bar */}
-            <form onSubmit={handleSearch} className="mb-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search seasonal checklists..."
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
-              </div>
-            </form>
-
-            {/* Filter Toggle Button (Mobile) */}
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="md:hidden w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-            >
-              <Filter className="w-4 h-4" />
-              Filters
-            </button>
-
-            {/* Filters */}
-            <div className={`${showFilters ? 'block' : 'hidden'} md:block mt-4 md:mt-0`}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Season Filter */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Season
-                  </label>
-                  <select
-                    value={currentSeason || 'all'}
-                    onChange={(e) => handleFilterChange('season', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  >
-                    {Object.entries(seasons).map(([value, label]) => (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
+            {/* Search and Filters */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-8">
+              {/* Search Bar */}
+              <form onSubmit={handleSearch} className="mb-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search seasonal checklists..."
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                  />
                 </div>
+              </form>
 
-                {/* Sort Filter */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Sort By
-                  </label>
-                  <select
-                    value={currentSort || 'season'}
-                    onChange={(e) => handleFilterChange('sort', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  >
-                    {sortOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
+              {/* Filter Toggle Button (Mobile) */}
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="md:hidden w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors mb-4"
+              >
+                <Filter className="w-4 h-4" />
+                Filters
+              </button>
+
+              {/* Filters */}
+              <div className={`${showFilters ? 'block' : 'hidden'} md:block`}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Season Filter */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Season
+                    </label>
+                    <select
+                      value={currentSeason || 'all'}
+                      onChange={(e) => handleFilterChange('season', e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    >
+                      {Object.entries(seasons).map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Sort Filter */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Sort By
+                    </label>
+                    <select
+                      value={currentSort || 'season'}
+                      onChange={(e) => handleFilterChange('sort', e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    >
+                      {sortOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Results Count */}
-          <div className="mb-6">
-            <p className="text-gray-600 dark:text-gray-400">
-              Showing <span className="font-semibold">{checklists.data.length}</span> of{' '}
-              <span className="font-semibold">{checklists.total}</span> checklists
-            </p>
-          </div>
-
-          {/* Checklists Grid */}
-          {checklists.data.length > 0 ? (
-            <>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                {checklists.data.map((checklist, index) => (
-                  <ChecklistCard key={checklist.id} checklist={checklist} index={index} />
-                ))}
+            {/* Active Filters */}
+            {(searchQuery || currentSeason) && (
+              <div className="flex items-center gap-3 mb-6">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Active filters:</span>
+                {searchQuery && (
+                  <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full text-sm">
+                    Search: "{searchQuery}"
+                  </span>
+                )}
+                {currentSeason && currentSeason !== 'all' && (
+                  <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full text-sm capitalize">
+                    Season: {currentSeason}
+                  </span>
+                )}
+                <button
+                  onClick={() => {
+                    setSearch('');
+                    router.get('/resources/maintenance/seasonal');
+                  }}
+                  className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                >
+                  Clear all
+                </button>
               </div>
+            )}
 
-              {/* Pagination */}
-              {checklists.last_page > 1 && (
-                <div className="flex items-center justify-center gap-2">
-                  {/* Previous Button */}
-                  {checklists.links[0].url && (
-                    <Link
-                      href={checklists.links[0].url}
-                      className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
-                      preserveState
-                      preserveScroll
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                      Previous
-                    </Link>
-                  )}
-
-                  {/* Page Numbers */}
-                  <div className="flex items-center gap-2">
-                    {checklists.links.slice(1, -1).map((link, index) => (
-                      <Link
-                        key={index}
-                        href={link.url || '#'}
-                        className={`px-4 py-2 rounded-lg transition-colors ${link.active
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
-                          }`}
-                        preserveState
-                        preserveScroll
-                      >
-                        {link.label}
-                      </Link>
-                    ))}
-                  </div>
-
-                  {/* Next Button */}
-                  {checklists.links[checklists.links.length - 1].url && (
-                    <Link
-                      href={checklists.links[checklists.links.length - 1].url || '#'}
-                      className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
-                      preserveState
-                      preserveScroll
-                    >
-                      Next
-                      <ChevronRight className="w-4 h-4" />
-                    </Link>
-                  )}
-                </div>
-              )}
-            </>
-          ) : (
-            // Empty State
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center py-16"
-            >
-              <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                No checklists found
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Try adjusting your filters or search terms
+            {/* Results Count */}
+            <div className="mb-6">
+              <p className="text-gray-600 dark:text-gray-400">
+                Showing <span className="font-semibold text-gray-900 dark:text-white">{checklists.data.length}</span> of{' '}
+                <span className="font-semibold text-gray-900 dark:text-white">{checklists.total}</span> checklists
               </p>
-              <button
-                onClick={() => {
-                  setSearch('');
-                  router.get('/resources/maintenance/seasonal', {}, {
-                    preserveState: false,
-                  });
-                }}
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
+            </div>
+
+            {/* Checklists Grid */}
+            {checklists.data.length > 0 ? (
+              <>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                  {checklists.data.map((checklist, index) => (
+                    <ChecklistCard
+                      key={checklist.id}
+                      checklist={checklist}
+                      index={index}
+                    />
+                  ))}
+                </div>
+
+                {/* Pagination */}
+                {checklists.last_page > 1 && (
+                  <div className="flex justify-center items-center gap-2">
+                    <button
+                      onClick={() => router.get(checklists.links[0].url || '#')}
+                      disabled={!checklists.links[0].url}
+                      className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+
+                    <div className="flex gap-2">
+                      {checklists.links.slice(1, -1).map((link, index) => (
+                        <button
+                          key={index}
+                          onClick={() => link.url && router.get(link.url)}
+                          disabled={!link.url}
+                          className={`px-4 py-2 rounded-lg font-medium transition-all ${link.active
+                            ? 'bg-blue-600 text-white shadow-md'
+                            : 'border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                          dangerouslySetInnerHTML={{ __html: link.label }}
+                        />
+                      ))}
+                    </div>
+
+                    <button
+                      onClick={() => router.get(checklists.links[checklists.links.length - 1].url || '#')}
+                      disabled={!checklists.links[checklists.links.length - 1].url}
+                      className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-center py-12"
               >
-                Clear Filters
-              </button>
-            </motion.div>
-          )}
-        </div>
+                <Calendar className="w-16 h-16 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  No checklists found
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-6">
+                  Try adjusting your filters or search query
+                </p>
+                <button
+                  onClick={() => {
+                    setSearch('');
+                    router.get('/resources/maintenance/seasonal');
+                  }}
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all"
+                >
+                  Clear Filters
+                </button>
+              </motion.div>
+            )}
+          </div>
+        </main>
 
         <Footer />
       </div>
