@@ -7,7 +7,6 @@ import { ThemeProvider } from '@/contexts/ThemeContext';
 import { FluidsIndexProps } from '@/types/maintenance';
 import FluidGuideCard from '@/Components/maintenance/FluidGuideCard';
 import {
-  ArrowLeft,
   Search,
   Filter,
   Droplets,
@@ -163,7 +162,7 @@ export default function FluidsIndex({
                   <select
                     value={currentSort}
                     onChange={(e) => handleSortChange(e.target.value)}
-                    className="px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white"
+                    className="pl-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white"
                   >
                     {Object.entries(sortOptions).map(([key, value]) => (
                       <option key={key} value={key}>
