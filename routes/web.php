@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CarIssueController;
+use App\Http\Controllers\DrivingTipController;
 use App\Http\Controllers\ExpertContactController;
 use App\Http\Controllers\ExpertController;
 use App\Http\Controllers\FluidGuideController;
@@ -12,6 +13,7 @@ use App\Http\Controllers\SeasonalChecklistController;
 use App\Http\Controllers\WarningLightController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+
 
 
 
@@ -53,6 +55,18 @@ Route::prefix('resources/car-issues')->name('car-issues.')->group(function () {
     Route::get('/', [CarIssueController::class, 'index'])->name('index');
     Route::get('/{slug}', [CarIssueController::class, 'show'])->name('show');
     Route::post('/{issue}/helpful', [CarIssueController::class, 'markHelpful'])->name('helpful');
+});
+
+// Driving Tips Routes
+Route::prefix('resources/driving-tips')->name('driving-tips.')->group(function () {
+    Route::get('/', [DrivingTipController::class, 'index'])->name('index');
+    Route::get('/{drivingTip:slug}', [DrivingTipController::class, 'show'])->name('show');
+
+    // Auth required routes
+    Route::middleware('auth')->group(function () {
+        Route::post('/{drivingTip:slug}/helpful', [DrivingTipController::class, 'markHelpful'])->name('helpful');
+        Route::post('/{drivingTip:slug}/bookmark', [DrivingTipController::class, 'toggleBookmark'])->name('bookmark');
+    });
 });
 
 // Maintenance Resources Hub
