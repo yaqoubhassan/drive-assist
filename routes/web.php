@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CarIssueController;
 use App\Http\Controllers\DrivingTipController;
+use App\Http\Controllers\ElectricVehicleController;
 use App\Http\Controllers\ExpertContactController;
 use App\Http\Controllers\ExpertController;
 use App\Http\Controllers\FluidGuideController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\SeasonalChecklistController;
 use App\Http\Controllers\WarningLightController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+
 
 
 
@@ -131,6 +133,13 @@ Route::prefix('resources/maintenance/seasonal')->group(function () {
 
     Route::post('/{slug}/feedback', [SeasonalChecklistController::class, 'feedback'])
         ->name('maintenance.seasonal.feedback');
+});
+
+// Electric Vehicles Routes
+Route::prefix('resources/electric-vehicles')->name('electric-vehicles.')->group(function () {
+    Route::get('/', [ElectricVehicleController::class, 'index'])->name('index');
+    Route::get('/{electricVehicle:slug}', [ElectricVehicleController::class, 'show'])->name('show');
+    Route::post('/{electricVehicle:slug}/helpful', [ElectricVehicleController::class, 'markHelpful'])->name('helpful');
 });
 
 // Expert profile routes
