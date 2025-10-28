@@ -14,25 +14,25 @@ class DrivingTipController extends Controller
      */
     public function index(Request $request): Response
     {
-        $query = DrivingTip::query()->published();
+        $search = $request->input('search');
+        $category = $request->input('category');
+        $difficulty = $request->input('difficulty');
+        $sort = $request->input('sort', 'popular');
 
-        // Search
-        if ($search = $request->input('search')) {
-            $query->search($search);
-        }
+        $query = DrivingTip::query()
+            ->published()
+            ->search($search);
 
-        // Category filter
-        if ($category = $request->input('category')) {
+        // Apply filters
+        if ($category) {
             $query->category($category);
         }
 
-        // Difficulty filter
-        if ($difficulty = $request->input('difficulty')) {
+        if ($difficulty) {
             $query->difficulty($difficulty);
         }
 
-        // Sorting
-        $sort = $request->input('sort', 'popular');
+        // Apply sorting
         switch ($sort) {
             case 'recent':
                 $query->latest();
@@ -45,22 +45,18 @@ class DrivingTipController extends Controller
                 break;
             case 'popular':
             default:
-                $query->orderByDesc('is_popular')
+                $query->where('is_popular', true)
                     ->orderByDesc('view_count');
                 break;
         }
 
         $tips = $query->paginate(12)->withQueryString();
 
-        // Get categories for filter dropdown
-        $categories = $this->getCategories();
-
-        // Get difficulties for filter dropdown
-        $difficulties = [
-            'beginner' => 'Beginner',
-            'intermediate' => 'Intermediate',
-            'advanced' => 'Advanced',
-        ];
+        // Get featured tips for sidebar/header
+        $featuredTips = DrivingTip::published()
+            ->featured()
+            ->limit(3)
+            ->get();
 
         // Get stats
         $stats = [
@@ -69,17 +65,10 @@ class DrivingTipController extends Controller
             'total_views' => DrivingTip::published()->sum('view_count'),
         ];
 
-        // Featured tips (for homepage/sidebar)
-        $featuredTips = DrivingTip::query()
-            ->published()
-            ->featured()
-            ->limit(3)
-            ->get();
-
         return Inertia::render('Resources/DrivingTips/Index', [
             'tips' => $tips,
-            'categories' => $categories,
-            'difficulties' => $difficulties,
+            'categories' => $this->getCategories(),
+            'difficulties' => $this->getDifficulties(),
             'stats' => $stats,
             'featuredTips' => $featuredTips,
             'filters' => [
@@ -115,7 +104,13 @@ class DrivingTipController extends Controller
                 ->get();
         }
 
-        // Get user's interaction with this tip (if authenticated)
+        // Check if user has already voted (by IP address)
+        $ipAddress = $request->ip();
+        $userFeedback = $drivingTip->helpfulFeedback()
+            ->where('ip_address', $ipAddress)
+            ->first();
+
+        // Get user's interaction with this tip (if authenticated) - for bookmarks
         $userProgress = null;
         if ($request->user()) {
             $userProgress = $request->user()
@@ -134,53 +129,52 @@ class DrivingTipController extends Controller
                 'formatted_reading_time' => $drivingTip->formatted_reading_time,
             ],
             'relatedTips' => $relatedTips,
-            'userProgress' => $userProgress,
+            'userProgress' => $userProgress ? [
+                'is_bookmarked' => $userProgress->pivot->is_bookmarked ?? false,
+                'is_read' => $userProgress->pivot->is_read ?? false,
+            ] : null,
+            // Pass voting status to frontend (IP-based)
+            'userHasVotedHelpful' => $userFeedback !== null,
         ]);
     }
 
     /**
-     * Mark a tip as helpful.
+     * Mark a tip as helpful (IP-based, no auth required).
      */
     public function markHelpful(Request $request, DrivingTip $drivingTip)
     {
-        if (!$request->user()) {
-            return response()->json([
-                'message' => 'You must be logged in to mark tips as helpful.'
-            ], 401);
-        }
+        $ipAddress = $request->ip();
 
-        $userProgress = $request->user()
-            ->drivingTips()
-            ->where('driving_tip_id', $drivingTip->id)
+        // Check if user already voted from this IP
+        $existing = $drivingTip->helpfulFeedback()
+            ->where('ip_address', $ipAddress)
             ->first();
 
-        if ($userProgress && $userProgress->pivot->is_helpful) {
+        if ($existing) {
             return response()->json([
-                'message' => 'You have already marked this tip as helpful.',
+                'message' => 'You have already marked this tip as helpful',
+                'already_voted' => true,
                 'helpful_count' => $drivingTip->helpful_count,
-            ]);
+            ], 422);
         }
 
-        // Create or update user progress
-        $request->user()->drivingTips()->syncWithoutDetaching([
-            $drivingTip->id => [
-                'is_helpful' => true,
-                'is_read' => true,
-                'read_at' => now(),
-            ]
+        // Create feedback record
+        $drivingTip->helpfulFeedback()->create([
+            'ip_address' => $ipAddress,
+            'is_helpful' => true,
         ]);
 
         // Increment helpful count
-        $drivingTip->increment('helpful_count');
+        $drivingTip->incrementHelpful();
 
         return response()->json([
             'message' => 'Thank you for your feedback!',
-            'helpful_count' => $drivingTip->helpful_count,
+            'helpful_count' => $drivingTip->fresh()->helpful_count,
         ]);
     }
 
     /**
-     * Toggle bookmark for a tip.
+     * Toggle bookmark for a tip (Auth required).
      */
     public function toggleBookmark(Request $request, DrivingTip $drivingTip)
     {
@@ -236,6 +230,18 @@ class DrivingTipController extends Controller
             'safety' => 'Safety Tips',
             'parking' => 'Parking Skills',
             'highway' => 'Highway Driving',
+        ];
+    }
+
+    /**
+     * Get available difficulties.
+     */
+    private function getDifficulties(): array
+    {
+        return [
+            'beginner' => 'Beginner',
+            'intermediate' => 'Intermediate',
+            'advanced' => 'Advanced',
         ];
     }
 }

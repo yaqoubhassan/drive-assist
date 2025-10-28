@@ -1,6 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
+import axios from 'axios';
 import Navbar from '@/Components/Navbar';
 import Footer from '@/Components/Footer';
 import { BackButton } from '@/Components/ui/BackButton';
@@ -49,9 +50,9 @@ interface Props {
   relatedTips: DrivingTip[];
   userProgress: {
     is_bookmarked: boolean;
-    is_helpful: boolean;
     is_read: boolean;
   } | null;
+  userHasVotedHelpful: boolean;
 }
 
 // Category badge colors (same as Index)
@@ -73,10 +74,10 @@ const difficultyColors = {
   advanced: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300',
 };
 
-export default function DrivingTipShow({ tip, relatedTips, userProgress }: Props) {
+export default function DrivingTipShow({ tip, relatedTips, userProgress, userHasVotedHelpful }: Props) {
   const [shareMessage, setShareMessage] = useState<string | null>(null);
   const [isBookmarked, setIsBookmarked] = useState(userProgress?.is_bookmarked || false);
-  const [isHelpful, setIsHelpful] = useState(userProgress?.is_helpful || false);
+  const [isHelpful, setIsHelpful] = useState(userHasVotedHelpful);
   const [currentHelpfulCount, setCurrentHelpfulCount] = useState(tip.helpful_count);
 
   // Safe data access
@@ -118,51 +119,46 @@ export default function DrivingTipShow({ tip, relatedTips, userProgress }: Props
     setShareMessage('Link copied to clipboard!');
   };
 
-  // Handle bookmark
+  // Handle bookmark (still requires auth)
   const handleBookmark = async () => {
     try {
-      const response = await fetch(route('driving-tips.bookmark', tip.slug), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-        },
-      });
-
-      const data = await response.json();
-      setIsBookmarked(data.is_bookmarked);
-      setShareMessage(data.message);
+      const response = await axios.post(route('driving-tips.bookmark', tip.slug));
+      setIsBookmarked(response.data.is_bookmarked);
+      setShareMessage(response.data.message);
       setTimeout(() => setShareMessage(null), 3000);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Bookmark error:', error);
-      setShareMessage('Please log in to bookmark tips');
+      if (error.response?.status === 401) {
+        setShareMessage('Please log in to bookmark tips');
+      } else {
+        setShareMessage('An error occurred. Please try again.');
+      }
       setTimeout(() => setShareMessage(null), 3000);
     }
   };
 
-  // Handle helpful
+  // Handle helpful (NO AUTH REQUIRED - IP-based tracking)
   const handleHelpful = async () => {
-    try {
-      const response = await fetch(route('driving-tips.helpful', tip.slug), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-        },
-      });
+    if (isHelpful) return; // Already voted
 
-      const data = await response.json();
-      if (response.ok) {
-        setIsHelpful(true);
-        setCurrentHelpfulCount(data.helpful_count);
-        setShareMessage(data.message);
-      } else {
-        setShareMessage(data.message);
-      }
+    try {
+      const response = await axios.post(route('driving-tips.helpful', tip.slug));
+
+      setIsHelpful(true);
+      setCurrentHelpfulCount(response.data.helpful_count);
+      setShareMessage(response.data.message);
       setTimeout(() => setShareMessage(null), 3000);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Helpful error:', error);
-      setShareMessage('Please log in to mark as helpful');
+
+      if (error.response?.status === 422) {
+        // Already voted
+        setShareMessage(error.response.data.message || 'You have already marked this as helpful');
+        setIsHelpful(true);
+      } else {
+        setShareMessage('An error occurred. Please try again.');
+      }
+
       setTimeout(() => setShareMessage(null), 3000);
     }
   };
@@ -191,28 +187,32 @@ export default function DrivingTipShow({ tip, relatedTips, userProgress }: Props
               </motion.div>
             )}
 
-            {/* Header Section */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+            {/* Header */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-8"
+            >
               {/* Badges */}
               <div className="flex flex-wrap gap-2 mb-4">
-                <span className={`px-3 py-1 rounded-full text-sm font-semibold ${categoryColorClass}`}>
+                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${categoryColorClass}`}>
                   {tip.category_label}
                 </span>
-                <span className={`px-3 py-1 rounded-full text-sm font-semibold ${difficultyColorClass}`}>
+                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${difficultyColorClass}`}>
                   {tip.difficulty_label}
                 </span>
               </div>
 
               {/* Title */}
-              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">
+              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
                 {tip.title}
               </h1>
 
               {/* Meta Info */}
-              <div className="flex flex-wrap items-center gap-4 text-gray-600 dark:text-gray-400 mb-6">
+              <div className="flex flex-wrap items-center gap-6 text-gray-600 dark:text-gray-400 mb-6">
                 <div className="flex items-center gap-2">
                   <Clock className="w-5 h-5" />
-                  <span>{tip.formatted_reading_time}</span>
+                  <span>{tip.reading_time_minutes} min read</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Eye className="w-5 h-5" />
@@ -220,15 +220,15 @@ export default function DrivingTipShow({ tip, relatedTips, userProgress }: Props
                 </div>
                 <div className="flex items-center gap-2">
                   <ThumbsUp className="w-5 h-5" />
-                  <span>{currentHelpfulCount} found helpful</span>
+                  <span>{currentHelpfulCount.toLocaleString()} found helpful</span>
                 </div>
               </div>
 
               {/* Excerpt */}
               <p className="text-xl text-gray-700 dark:text-gray-300 mb-6">{tip.excerpt}</p>
 
-              {/* Actions */}
-              <div className="flex flex-wrap gap-3">
+              {/* Action Buttons */}
+              <div className="flex flex-wrap gap-4">
                 <button
                   onClick={handleShare}
                   className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300"

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 class DrivingTip extends Model
@@ -90,6 +91,14 @@ class DrivingTip extends Model
     }
 
     /**
+     * Get helpful feedback for this tip (IP-based, no auth required).
+     */
+    public function helpfulFeedback(): HasMany
+    {
+        return $this->hasMany(DrivingTipHelpfulFeedback::class);
+    }
+
+    /**
      * Scope a query to only include published tips.
      */
     public function scopePublished($query)
@@ -132,17 +141,21 @@ class DrivingTip extends Model
     /**
      * Scope a query to search tips.
      */
-    public function scopeSearch($query, $search)
+    public function scopeSearch($query, $searchTerm)
     {
-        return $query->where(function ($q) use ($search) {
-            $q->where('title', 'like', "%{$search}%")
-                ->orWhere('excerpt', 'like', "%{$search}%")
-                ->orWhere('content', 'like', "%{$search}%");
+        if (!$searchTerm) {
+            return $query;
+        }
+
+        return $query->where(function ($q) use ($searchTerm) {
+            $q->where('title', 'like', "%{$searchTerm}%")
+                ->orWhere('excerpt', 'like', "%{$searchTerm}%")
+                ->orWhere('content', 'like', "%{$searchTerm}%");
         });
     }
 
     /**
-     * Increment view count.
+     * Increment the view count.
      */
     public function incrementViewCount(): void
     {
@@ -150,11 +163,19 @@ class DrivingTip extends Model
     }
 
     /**
+     * Increment the helpful count.
+     */
+    public function incrementHelpful(): void
+    {
+        $this->increment('helpful_count');
+    }
+
+    /**
      * Get the category label.
      */
     public function getCategoryLabelAttribute(): string
     {
-        return match ($this->category) {
+        $labels = [
             'beginner' => 'Beginner Basics',
             'defensive' => 'Defensive Driving',
             'fuel_efficiency' => 'Fuel Efficiency',
@@ -163,8 +184,9 @@ class DrivingTip extends Model
             'safety' => 'Safety Tips',
             'parking' => 'Parking Skills',
             'highway' => 'Highway Driving',
-            default => ucfirst($this->category),
-        };
+        ];
+
+        return $labels[$this->category] ?? ucfirst($this->category);
     }
 
     /**
@@ -176,49 +198,37 @@ class DrivingTip extends Model
     }
 
     /**
-     * Get the difficulty color (for badges).
+     * Get the difficulty color for UI.
      */
     public function getDifficultyColorAttribute(): string
     {
-        return match ($this->difficulty) {
-            'beginner' => 'green',
-            'intermediate' => 'yellow',
-            'advanced' => 'red',
-            default => 'gray',
-        };
+        return $this->difficulty;
     }
 
     /**
-     * Get the category color (for badges).
+     * Get the category color for UI.
      */
     public function getCategoryColorAttribute(): string
     {
-        return match ($this->category) {
-            'beginner' => 'blue',
-            'defensive' => 'purple',
-            'fuel_efficiency' => 'green',
-            'weather' => 'cyan',
+        $colors = [
+            'beginner' => 'green',
+            'defensive' => 'blue',
+            'fuel_efficiency' => 'cyan',
+            'weather' => 'indigo',
             'advanced' => 'red',
             'safety' => 'orange',
-            'parking' => 'pink',
-            'highway' => 'indigo',
-            default => 'gray',
-        };
+            'parking' => 'purple',
+            'highway' => 'pink',
+        ];
+
+        return $colors[$this->category] ?? 'gray';
     }
 
     /**
-     * Get formatted reading time.
+     * Get the formatted reading time.
      */
     public function getFormattedReadingTimeAttribute(): string
     {
         return $this->reading_time_minutes . ' min read';
-    }
-
-    /**
-     * Get the route key name for Laravel model binding.
-     */
-    public function getRouteKeyName(): string
-    {
-        return 'slug';
     }
 }

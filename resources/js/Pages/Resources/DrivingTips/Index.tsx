@@ -17,6 +17,7 @@ import {
   ArrowRight,
   ChevronDown,
   Sparkles,
+  ThumbsUp,
 } from 'lucide-react';
 
 // TypeScript Interfaces
@@ -413,7 +414,7 @@ export default function DrivingTipsIndex({
   );
 }
 
-// Tip Card Component
+// Tip Card Component with Fixed Height
 function TipCard({ tip, index }: { tip: DrivingTip; index: number }) {
   const categoryColorClass =
     categoryColors[tip.category_color as keyof typeof categoryColors] || categoryColors.gray;
@@ -426,15 +427,16 @@ function TipCard({ tip, index }: { tip: DrivingTip; index: number }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
       whileHover={{ y: -4 }}
+      className="h-full"
     >
       <Link
         href={route('driving-tips.show', tip.slug)}
-        className="block h-full bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all overflow-hidden group"
+        className="flex flex-col h-[320px] bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all overflow-hidden group"
       >
-        {/* Header */}
-        <div className="p-6">
+        {/* Header - Fixed height section */}
+        <div className="flex-1 p-6 overflow-hidden">
           {/* Badges */}
-          <div className="flex flex-wrap gap-2 mb-4">
+          <div className="flex flex-wrap gap-2 mb-3">
             <span className={`px-3 py-1 rounded-full text-xs font-semibold ${categoryColorClass}`}>
               {tip.category_label}
             </span>
@@ -442,35 +444,41 @@ function TipCard({ tip, index }: { tip: DrivingTip; index: number }) {
               {tip.difficulty_label}
             </span>
             {tip.is_popular && (
-              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300">
-                <Star className="w-3 h-3 inline mr-1" />
+              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 flex items-center gap-1">
+                <Star className="w-3 h-3" />
                 Popular
               </span>
             )}
           </div>
 
-          {/* Title */}
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors line-clamp-2">
+          {/* Title - Fixed 2 lines */}
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors line-clamp-2 min-h-[3.5rem]">
             {tip.title}
           </h3>
 
-          {/* Excerpt */}
-          <p className="text-gray-600 dark:text-gray-400 mb-4 line-clamp-3">{tip.excerpt}</p>
+          {/* Excerpt - Fixed 3 lines */}
+          <p className="text-gray-600 dark:text-gray-400 mb-4 line-clamp-3 min-h-[4.5rem]">
+            {tip.excerpt}
+          </p>
 
-          {/* Meta Info */}
+          {/* Meta Info - Fixed height */}
           <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1" title="Reading time">
               <Clock className="w-4 h-4" />
               <span>{tip.reading_time_minutes} min</span>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1" title="Views">
               <Eye className="w-4 h-4" />
               <span>{tip.view_count.toLocaleString()}</span>
+            </div>
+            <div className="flex items-center gap-1" title="People found this helpful">
+              <ThumbsUp className="w-4 h-4" />
+              <span>{tip.helpful_count.toLocaleString()}</span>
             </div>
           </div>
         </div>
 
-        {/* Footer */}
+        {/* Footer - Fixed height */}
         <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold text-purple-600 dark:text-purple-400">
