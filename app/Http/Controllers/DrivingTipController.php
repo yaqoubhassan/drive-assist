@@ -17,7 +17,7 @@ class DrivingTipController extends Controller
         $search = $request->input('search');
         $category = $request->input('category');
         $difficulty = $request->input('difficulty');
-        $sort = $request->input('sort', 'popular');
+        $sort = $request->input('sort', 'recent');
 
         $query = DrivingTip::query()
             ->published()
@@ -44,9 +44,11 @@ class DrivingTipController extends Controller
                 $query->orderByDesc('view_count');
                 break;
             case 'popular':
-            default:
                 $query->where('is_popular', true)
                     ->orderByDesc('view_count');
+                break;
+            default:
+                $query->latest();
                 break;
         }
 

@@ -100,7 +100,6 @@ export default function DrivingTipsIndex({
   categories,
   difficulties,
   stats,
-  featuredTips,
   filters,
 }: Props) {
   const [searchQuery, setSearchQuery] = useState(filters.search || '');
@@ -144,18 +143,18 @@ export default function DrivingTipsIndex({
 
   // Check if filters are active
   const hasActiveFilters =
-    filters.search || filters.category || filters.difficulty || filters.sort !== 'popular';
+    filters.search || filters.category || filters.difficulty || filters.sort !== 'recent';
 
   // Sort options
   const sortOptions = [
-    { value: 'popular', label: 'Most Popular' },
     { value: 'recent', label: 'Most Recent' },
+    { value: 'popular', label: 'Most Popular' },
     { value: 'helpful', label: 'Most Helpful' },
     { value: 'views', label: 'Most Viewed' },
   ];
 
   const currentSortLabel =
-    sortOptions.find((opt) => opt.value === filters.sort)?.label || 'Most Popular';
+    sortOptions.find((opt) => opt.value === filters.sort)?.label || 'Most Recent';
 
   return (
     <ThemeProvider>
