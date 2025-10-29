@@ -33,7 +33,8 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        // Redirect based on user type
+        return $this->redirectBasedOnUserType();
     }
 
     /**
@@ -47,6 +48,21 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerateToken();
 
-        return redirect('/');
+        return redirect()->route('home');
+    }
+
+    /**
+     * Redirect user to appropriate dashboard based on their user type
+     */
+    protected function redirectBasedOnUserType(): RedirectResponse
+    {
+        $user = Auth::user();
+
+        return match ($user->user_type) {
+            'driver' => redirect()->intended(route('driver.dashboard')),
+            'expert' => redirect()->intended(route('expert.dashboard')),
+            'admin' => redirect()->intended(route('admin.dashboard')),
+            default => redirect()->intended(route('home')),
+        };
     }
 }
