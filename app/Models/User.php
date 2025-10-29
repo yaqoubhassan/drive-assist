@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use App\Notifications\VerifyEmailNotification;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     use HasFactory, Notifiable;
 
@@ -28,6 +30,11 @@ class User extends Authenticatable
         'is_active',
         'last_login_at',
     ];
+
+    public function sendEmailVerificationNotification()
+    {
+        $this->notify(new VerifyEmailNotification);
+    }
 
     /**
      * The attributes that should be hidden for serialization.

@@ -1,21 +1,26 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
+import ExpertDashboardLayout from '@/Layouts/Expertdashboardlayout';
 import { motion } from 'framer-motion';
 import {
-  ClockIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  EnvelopeIcon,
-  WrenchIcon,
+  UsersIcon,
+  BriefcaseIcon,
+  StarIcon,
   CurrencyDollarIcon,
   EyeIcon,
+  CheckCircleIcon,
 } from '@heroicons/react/24/outline';
+import {
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
+} from '@heroicons/react/24/solid';
+import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-interface ExpertDashboardProps {
+interface DashboardProps {
   expert: {
     id: number;
     businessName: string;
-    verificationStatus: 'pending' | 'approved' | 'rejected';
-    rating: number | string; // Can be number or string from database
+    verificationStatus: string;
+    rating: number;
     totalJobs: number;
     profileViews: number;
   };
@@ -23,251 +28,344 @@ interface ExpertDashboardProps {
     newLeads: number;
     activeJobs: number;
     completedJobs: number;
-    monthlyEarnings: number | string; // Can be number or string from database
+    monthlyEarnings: number;
+    leadsThisWeek: number;
+    leadsLastWeek: number;
+    earningsLastMonth: number;
   };
+  recentLeads: Array<{
+    id: number;
+    driverName: string;
+    message: string;
+    createdAt: string;
+    status: string;
+  }>;
+  earningsData: Array<{
+    month: string;
+    earnings: number;
+  }>;
+  jobStatusData: Array<{
+    status: string;
+    count: number;
+  }>;
 }
 
-export default function Dashboard({ expert, stats }: ExpertDashboardProps) {
-  // Helper function to safely format rating
-  const formatRating = (rating: number | string | null | undefined): string => {
-    if (rating === null || rating === undefined) return '0.0';
-    const numRating = typeof rating === 'string' ? parseFloat(rating) : rating;
-    return isNaN(numRating) ? '0.0' : numRating.toFixed(1);
-  };
+export default function Dashboard({ expert, stats, recentLeads, earningsData, jobStatusData }: DashboardProps) {
+  // Calculate trend percentages
+  const leadsTrend = stats.leadsLastWeek > 0
+    ? ((stats.leadsThisWeek - stats.leadsLastWeek) / stats.leadsLastWeek) * 100
+    : 0;
 
-  // Helper function to safely format currency
-  const formatCurrency = (amount: number | string | null | undefined): string => {
-    if (amount === null || amount === undefined) return '0.00';
-    const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-    return isNaN(numAmount) ? '0.00' : numAmount.toFixed(2);
-  };
+  const earningsTrend = stats.earningsLastMonth > 0
+    ? ((stats.monthlyEarnings - stats.earningsLastMonth) / stats.earningsLastMonth) * 100
+    : 0;
 
-  const getVerificationBadge = () => {
-    switch (expert.verificationStatus) {
-      case 'approved':
-        return (
-          <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full text-sm font-medium">
-            <CheckCircleIcon className="w-4 h-4" />
-            Verified
-          </span>
-        );
-      case 'pending':
-        return (
-          <span className="inline-flex items-center gap-1 px-3 py-1 bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 rounded-full text-sm font-medium">
-            <ClockIcon className="w-4 h-4" />
-            Pending Verification
-          </span>
-        );
-      case 'rejected':
-        return (
-          <span className="inline-flex items-center gap-1 px-3 py-1 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 rounded-full text-sm font-medium">
-            <XCircleIcon className="w-4 h-4" />
-            Not Verified
-          </span>
-        );
-    }
-  };
-
-  const statCards = [
+  // Stats cards data
+  const statsCards = [
     {
       title: 'New Leads',
       value: stats.newLeads,
-      icon: EnvelopeIcon,
+      icon: UsersIcon,
+      trend: leadsTrend,
+      trendLabel: 'vs last week',
       color: 'blue',
-      bgColor: 'bg-blue-100 dark:bg-blue-900/30',
-      iconColor: 'text-blue-600 dark:text-blue-400',
-      link: '/expert/leads',
+      bgColor: 'bg-blue-500',
     },
     {
       title: 'Active Jobs',
       value: stats.activeJobs,
-      icon: WrenchIcon,
+      icon: BriefcaseIcon,
       color: 'purple',
-      bgColor: 'bg-purple-100 dark:bg-purple-900/30',
-      iconColor: 'text-purple-600 dark:text-purple-400',
-      link: '/expert/jobs?status=active',
-    },
-    {
-      title: 'Completed Jobs',
-      value: stats.completedJobs,
-      icon: CheckCircleIcon,
-      color: 'green',
-      bgColor: 'bg-green-100 dark:bg-green-900/30',
-      iconColor: 'text-green-600 dark:text-green-400',
-      link: '/expert/jobs?status=completed',
+      bgColor: 'bg-purple-500',
     },
     {
       title: 'Monthly Earnings',
-      value: `$${formatCurrency(stats.monthlyEarnings)}`,
+      value: `$${stats.monthlyEarnings.toLocaleString()}`,
       icon: CurrencyDollarIcon,
-      color: 'emerald',
-      bgColor: 'bg-emerald-100 dark:bg-emerald-900/30',
-      iconColor: 'text-emerald-600 dark:text-emerald-400',
-      link: '/expert/earnings',
+      trend: earningsTrend,
+      trendLabel: 'vs last month',
+      color: 'green',
+      bgColor: 'bg-green-500',
+    },
+    {
+      title: 'Average Rating',
+      value: expert.rating.toFixed(1),
+      icon: StarIcon,
+      suffix: '/ 5.0',
+      color: 'yellow',
+      bgColor: 'bg-yellow-500',
     },
   ];
 
+  // Pie chart colors
+  const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444'];
+
   return (
-    <>
+    <ExpertDashboardLayout title="Dashboard">
       <Head title="Expert Dashboard" />
 
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Header */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
-          >
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                  Welcome back, {expert.businessName}!
-                </h1>
-                <div className="flex items-center gap-3">
-                  {getVerificationBadge()}
-                  {expert.verificationStatus === 'pending' && (
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      We're reviewing your application
-                    </p>
-                  )}
+      <div className="space-y-6">
+        {/* Welcome Banner */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-6 text-white"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold mb-2">
+                Welcome back, {expert.businessName}! 👋
+              </h1>
+              <p className="text-blue-100">
+                Here's what's happening with your business today.
+              </p>
+            </div>
+            {expert.verificationStatus === 'pending' && (
+              <div className="hidden md:block">
+                <div className="bg-yellow-400 text-yellow-900 px-4 py-2 rounded-lg font-semibold">
+                  ⏳ Verification Pending
                 </div>
               </div>
-
-              <div className="flex gap-3">
-                <Link
-                  href={`/experts/${expert.id}`}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                >
-                  <EyeIcon className="w-5 h-5" />
-                  View Public Profile
-                </Link>
-                <Link
-                  href="/expert/settings"
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-                >
-                  Settings
-                </Link>
+            )}
+            {expert.verificationStatus === 'approved' && (
+              <div className="hidden md:block">
+                <div className="bg-green-400 text-green-900 px-4 py-2 rounded-lg font-semibold flex items-center">
+                  <CheckCircleIcon className="h-5 w-5 mr-2" />
+                  Verified
+                </div>
               </div>
+            )}
+          </div>
+        </motion.div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {statsCards.map((stat, index) => (
+            <motion.div
+              key={stat.title}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+              className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className={`p-3 ${stat.bgColor} rounded-lg`}>
+                  <stat.icon className="h-6 w-6 text-white" />
+                </div>
+                {stat.trend !== undefined && (
+                  <div className={`flex items-center text-sm font-semibold ${stat.trend >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {stat.trend >= 0 ? (
+                      <ArrowTrendingUpIcon className="h-4 w-4 mr-1" />
+                    ) : (
+                      <ArrowTrendingDownIcon className="h-4 w-4 mr-1" />
+                    )}
+                    {Math.abs(stat.trend).toFixed(1)}%
+                  </div>
+                )}
+              </div>
+              <h3 className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">
+                {stat.title}
+              </h3>
+              <div className="flex items-baseline">
+                <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                  {stat.value}
+                </p>
+                {stat.suffix && (
+                  <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
+                    {stat.suffix}
+                  </span>
+                )}
+              </div>
+              {stat.trendLabel && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {stat.trendLabel}
+                </p>
+              )}
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Earnings Chart */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.4 }}
+            className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm"
+          >
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
+              Monthly Earnings
+            </h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={earningsData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis dataKey="month" stroke="#9CA3AF" />
+                <YAxis stroke="#9CA3AF" />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#1F2937',
+                    border: 'none',
+                    borderRadius: '8px',
+                    color: '#fff',
+                  }}
+                />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="earnings"
+                  stroke="#3B82F6"
+                  strokeWidth={3}
+                  dot={{ fill: '#3B82F6', r: 5 }}
+                  activeDot={{ r: 7 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </motion.div>
+
+          {/* Job Status Distribution */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.5 }}
+            className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm"
+          >
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
+              Job Status Distribution
+            </h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={jobStatusData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name}: ${((percent as number) * 100).toFixed(0)}%`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="count"
+                >
+                  {jobStatusData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#1F2937',
+                    border: 'none',
+                    borderRadius: '8px',
+                    color: '#fff',
+                  }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </motion.div>
+        </div>
+
+        {/* Recent Leads & Quick Actions */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Recent Leads */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+            className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Recent Leads
+              </h3>
+              <a
+                href={route('expert.leads.index')}
+                className="text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium"
+              >
+                View All
+              </a>
+            </div>
+            <div className="space-y-4">
+              {recentLeads.length > 0 ? (
+                recentLeads.map((lead) => (
+                  <div
+                    key={lead.id}
+                    className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-500 dark:hover:border-blue-500 transition-colors cursor-pointer"
+                    onClick={() => window.location.href = route('expert.leads.show', lead.id)}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
+                          {lead.driverName}
+                        </h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                          {lead.message}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
+                          {new Date(lead.createdAt).toLocaleDateString()} at {new Date(lead.createdAt).toLocaleTimeString()}
+                        </p>
+                      </div>
+                      <span className={`
+                                                ml-4 px-3 py-1 text-xs font-semibold rounded-full flex-shrink-0
+                                                ${lead.status === 'new' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : ''}
+                                                ${lead.status === 'contacted' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : ''}
+                                                ${lead.status === 'in_progress' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' : ''}
+                                            `}>
+                        {lead.status.replace('_', ' ').toUpperCase()}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-12">
+                  <UsersIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500 dark:text-gray-400">
+                    No new leads yet. Check back soon!
+                  </p>
+                </div>
+              )}
             </div>
           </motion.div>
 
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {statCards.map((stat, index) => (
-              <motion.div
-                key={stat.title}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-              >
-                <Link href={stat.link}>
-                  <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className={`p-3 ${stat.bgColor} rounded-lg`}>
-                        <stat.icon className={`w-6 h-6 ${stat.iconColor}`} />
-                      </div>
-                    </div>
-                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
-                      {stat.value}
-                    </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {stat.title}
-                    </p>
-                  </div>
-                </Link>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Info Cards */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Quick Actions */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm"
-            >
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                Quick Actions
-              </h2>
-              <div className="space-y-3">
-                <Link
-                  href="/expert/leads"
-                  className="block p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
-                >
-                  <p className="font-semibold text-blue-900 dark:text-blue-100">
-                    View New Leads ({stats.newLeads})
-                  </p>
-                  <p className="text-sm text-blue-700 dark:text-blue-300">
-                    Respond to customer inquiries
-                  </p>
-                </Link>
-
-                <Link
-                  href="/expert/profile/edit"
-                  className="block p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
-                >
-                  <p className="font-semibold text-purple-900 dark:text-purple-100">
-                    Update Profile
-                  </p>
-                  <p className="text-sm text-purple-700 dark:text-purple-300">
-                    Keep your information current
-                  </p>
-                </Link>
-
-                <Link
-                  href="/expert/availability"
-                  className="block p-4 bg-green-50 dark:bg-green-900/20 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
-                >
-                  <p className="font-semibold text-green-900 dark:text-green-100">
-                    Manage Availability
-                  </p>
-                  <p className="text-sm text-green-700 dark:text-green-300">
-                    Update your schedule
-                  </p>
-                </Link>
-              </div>
-            </motion.div>
-
-            {/* Profile Stats */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm"
-            >
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                Profile Performance
-              </h2>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Rating</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {formatRating(expert.rating)} ⭐
-                    </p>
-                  </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Based on {expert.totalJobs} {expert.totalJobs === 1 ? 'job' : 'jobs'}
-                  </p>
+          {/* Quick Stats */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7 }}
+            className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm"
+          >
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
+              Quick Stats
+            </h3>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div className="flex items-center">
+                  <EyeIcon className="h-5 w-5 text-gray-400 mr-3" />
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Profile Views</span>
                 </div>
-
-                <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Profile Views</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {expert.profileViews}
-                    </p>
-                  </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    This month
-                  </p>
-                </div>
+                <span className="text-lg font-bold text-gray-900 dark:text-white">
+                  {expert.profileViews}
+                </span>
               </div>
-            </motion.div>
-          </div>
+              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div className="flex items-center">
+                  <BriefcaseIcon className="h-5 w-5 text-gray-400 mr-3" />
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Total Jobs</span>
+                </div>
+                <span className="text-lg font-bold text-gray-900 dark:text-white">
+                  {expert.totalJobs}
+                </span>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div className="flex items-center">
+                  <CheckCircleIcon className="h-5 w-5 text-gray-400 mr-3" />
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Completed</span>
+                </div>
+                <span className="text-lg font-bold text-gray-900 dark:text-white">
+                  {stats.completedJobs}
+                </span>
+              </div>
+            </div>
+          </motion.div>
         </div>
       </div>
-    </>
+    </ExpertDashboardLayout>
   );
 }

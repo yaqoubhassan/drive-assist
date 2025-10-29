@@ -15,13 +15,46 @@ class VerifyEmailController extends Controller
     public function __invoke(EmailVerificationRequest $request): RedirectResponse
     {
         if ($request->user()->hasVerifiedEmail()) {
-            return redirect()->intended(route('dashboard', absolute: false).'?verified=1');
+            return $this->redirectBasedOnUserType($request->user());
         }
 
         if ($request->user()->markEmailAsVerified()) {
             event(new Verified($request->user()));
         }
 
-        return redirect()->intended(route('dashboard', absolute: false).'?verified=1');
+        return $this->redirectBasedOnUserType($request->user());
+    }
+
+    /**
+     * Redirect user to appropriate destination based on their user type and profile status
+     */
+    protected function redirectBasedOnUserType($user): RedirectResponse
+    {
+        // For experts, check if they've completed their profile
+        if ($user->user_type === 'expert') {
+            $expertProfile = $user->expertProfile;
+
+            // If no profile or incomplete, go to onboarding
+            if (!$expertProfile || !$expertProfile->profile_completed) {
+                return redirect()->route('expert.onboarding.index')
+                    ->with('success', 'Email verified! Please complete your business profile to start receiving leads.');
+            }
+
+            // Profile complete, go to dashboard
+            return redirect()->route('expert.dashboard')
+                ->with('success', 'Welcome back!');
+        }
+
+        // For drivers, can optionally complete profile
+        if ($user->user_type === 'driver') {
+            // Check if they have any vehicles or basic info
+            // For now, just send them to dashboard
+            return redirect()->route('driver.dashboard')
+                ->with('success', 'Email verified! Welcome to DriveAssist.');
+        }
+
+        // Admin or other user types
+        return redirect()->route('dashboard')
+            ->with('success', 'Email verified successfully!');
     }
 }

@@ -12,46 +12,120 @@ class ExpertDashboardController extends Controller
     /**
      * Display the expert dashboard
      */
-    public function index(): Response
+    public function index()
     {
         $user = auth()->user();
         $expertProfile = $user->expertProfile;
 
-        // Get today's stats
-        $today = now()->startOfDay();
-        $newLeadsToday = $expertProfile->leads()->whereDate('created_at', $today)->count();
+        if (!$expertProfile) {
+            return redirect()->route('expert.register')
+                ->with('error', 'Please complete your expert profile first.');
+        }
+
+        // Get stats
+        $newLeads = $expertProfile->leads()->where('status', 'new')->count();
         $activeJobs = $expertProfile->jobs()->where('job_status', 'in_progress')->count();
-        $todayEarnings = $expertProfile->jobs()
-            ->whereDate('updated_at', $today)
+        $completedJobs = $expertProfile->jobs()->where('job_status', 'completed')->count();
+
+        // Monthly earnings
+        $monthlyEarnings = $expertProfile->jobs()
             ->where('job_status', 'completed')
-            ->sum('total_cost');
+            ->whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
+            ->sum('total_cost') ?? 0;
+
+        // Last month earnings for trend
+        $earningsLastMonth = $expertProfile->jobs()
+            ->where('job_status', 'completed')
+            ->whereMonth('created_at', now()->subMonth()->month)
+            ->whereYear('created_at', now()->subMonth()->year)
+            ->sum('total_cost') ?? 0;
+
+        // Leads this week vs last week
+        $leadsThisWeek = $expertProfile->leads()
+            ->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])
+            ->count();
+
+        $leadsLastWeek = $expertProfile->leads()
+            ->whereBetween('created_at', [
+                now()->subWeek()->startOfWeek(),
+                now()->subWeek()->endOfWeek()
+            ])
+            ->count();
+
+        // Recent leads (last 5)
+        $recentLeads = $expertProfile->leads()
+            ->with('driver')
+            ->latest()
+            ->take(5)
+            ->get()
+            ->map(function ($lead) {
+                return [
+                    'id' => $lead->id,
+                    'driverName' => $lead->driver_name,
+                    'message' => $lead->message,
+                    'createdAt' => $lead->created_at->toIso8601String(),
+                    'status' => $lead->status,
+                ];
+            });
+
+        // Earnings data for the last 6 months (for chart)
+        $earningsData = collect();
+        for ($i = 5; $i >= 0; $i--) {
+            $month = now()->subMonths($i);
+            $earnings = $expertProfile->jobs()
+                ->where('job_status', 'completed')
+                ->whereMonth('created_at', $month->month)
+                ->whereYear('created_at', $month->year)
+                ->sum('total_cost') ?? 0;
+
+            $earningsData->push([
+                'month' => $month->format('M'),
+                'earnings' => (float) $earnings,
+            ]);
+        }
+
+        // Job status distribution (for pie chart)
+        $jobStatusData = [
+            [
+                'status' => 'Scheduled',
+                'count' => $expertProfile->jobs()->where('job_status', 'scheduled')->count(),
+            ],
+            [
+                'status' => 'In Progress',
+                'count' => $activeJobs,
+            ],
+            [
+                'status' => 'Completed',
+                'count' => $completedJobs,
+            ],
+            [
+                'status' => 'Cancelled',
+                'count' => $expertProfile->jobs()->where('job_status', 'cancelled')->count(),
+            ],
+        ];
 
         return Inertia::render('Expert/Dashboard', [
-            'user' => $user,
-            'expertProfile' => $expertProfile,
-            'stats' => [
-                'newLeadsToday' => $newLeadsToday,
-                'activeJobs' => $activeJobs,
-                'avgRating' => $expertProfile->avg_rating,
-                'todayEarnings' => $todayEarnings,
+            'expert' => [
+                'id' => $expertProfile->id,
+                'businessName' => $expertProfile->business_name,
+                'verificationStatus' => $expertProfile->verification_status,
+                'rating' => (float) $expertProfile->avg_rating,
+                'totalJobs' => (int) $expertProfile->total_jobs,
+                'profileViews' => (int) $expertProfile->profile_views,
             ],
-            'recentLeads' => $expertProfile->leads()
-                ->with(['driver', 'diagnosis'])
-                ->where('status', 'new')
-                ->latest()
-                ->take(5)
-                ->get(),
-            'activeJobs' => $expertProfile->jobs()
-                ->with(['driver', 'vehicle'])
-                ->whereIn('job_status', ['scheduled', 'in_progress'])
-                ->latest()
-                ->take(5)
-                ->get(),
-            'recentReviews' => $expertProfile->reviews()
-                ->with('driver')
-                ->latest()
-                ->take(5)
-                ->get(),
+            'stats' => [
+                'newLeads' => $newLeads,
+                'activeJobs' => $activeJobs,
+                'completedJobs' => $completedJobs,
+                'monthlyEarnings' => (float) $monthlyEarnings,
+                'leadsThisWeek' => $leadsThisWeek,
+                'leadsLastWeek' => $leadsLastWeek,
+                'earningsLastMonth' => (float) $earningsLastMonth,
+            ],
+            'recentLeads' => $recentLeads,
+            'earningsData' => $earningsData,
+            'jobStatusData' => array_filter($jobStatusData, fn($item) => $item['count'] > 0),
         ]);
     }
 

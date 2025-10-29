@@ -18,7 +18,7 @@ class RegisteredUserController extends Controller
     /**
      * Display the registration view.
      * 
-     * This shows the user type selection page.
+     * Simple registration form with name, email, password, and user type selection.
      */
     public function create(): Response
     {
@@ -52,6 +52,8 @@ class RegisteredUserController extends Controller
 
     /**
      * Handle an incoming registration request.
+     * 
+     * Creates account with basic info only. Profile completion happens after email verification.
      *
      * @throws \Illuminate\Validation\ValidationException
      */
@@ -64,6 +66,7 @@ class RegisteredUserController extends Controller
             'user_type' => 'required|in:driver,expert',
         ]);
 
+        // Create user with basic information only
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
@@ -71,17 +74,15 @@ class RegisteredUserController extends Controller
             'user_type' => $request->user_type,
         ]);
 
+        // Fire the Registered event to send verification email
         event(new Registered($user));
 
+        // Log the user in temporarily to access verification page
         Auth::login($user);
 
-        // Redirect based on user type
-        if ($user->user_type === 'expert') {
-            // Experts need to complete onboarding
-            return redirect()->route('expert.onboarding')->with('success', 'Welcome! Please complete your expert profile to start receiving leads.');
-        }
-
-        // Drivers go straight to dashboard
-        return redirect()->route('driver.dashboard')->with('success', 'Welcome to DriveAssist! Start by diagnosing your first vehicle issue.');
+        // Redirect to email verification notice
+        // After verification, they'll be redirected to profile completion
+        return redirect()->route('verification.notice')
+            ->with('success', 'Registration successful! Please verify your email address to continue.');
     }
 }
