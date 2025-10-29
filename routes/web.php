@@ -327,6 +327,8 @@ Route::prefix('expert')->name('expert.')->middleware(['auth', 'expert'])->group(
     // Onboarding (for newly registered experts who haven't completed profile)
     Route::get('/onboarding', [ExpertOnboardingController::class, 'index'])
         ->name('onboarding.index');
+    Route::post('/onboarding/save', [ExpertOnboardingController::class, 'save'])
+        ->name('onboarding.save');
     Route::post('/onboarding/complete', [ExpertOnboardingController::class, 'complete'])
         ->name('onboarding.complete');
     // Dashboard

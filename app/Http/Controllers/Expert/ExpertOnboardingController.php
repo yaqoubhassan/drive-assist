@@ -13,8 +13,6 @@ class ExpertOnboardingController extends Controller
 {
     /**
      * Show the expert onboarding form
-     * 
-     * Streamlined single-page form that collects only essential information
      */
     public function index()
     {
@@ -51,7 +49,7 @@ class ExpertOnboardingController extends Controller
 
             $expertProfile = $user->expertProfile;
 
-            // Defensive check - this should never happen now, but just in case
+            // Defensive check
             if (!$expertProfile) {
                 throw new \Exception('Failed to create or retrieve expert profile');
             }
@@ -70,6 +68,11 @@ class ExpertOnboardingController extends Controller
                     ->with('info', 'Your profile is already completed!');
             }
 
+            // Get current specialties
+            $currentSpecialties = $expertProfile->specialties()
+                ->pluck('specialty')
+                ->toArray();
+
             return Inertia::render('Expert/Onboarding', [
                 'user' => [
                     'name' => $user->name,
@@ -82,47 +85,145 @@ class ExpertOnboardingController extends Controller
                     'bio' => $expertProfile->bio,
                     'years_experience' => $expertProfile->years_experience,
                     'service_radius_km' => $expertProfile->service_radius_km ?? 25,
-                    'specialties' => $expertProfile->specialties->pluck('specialty')->toArray(),
+                    'business_address' => $user->location_address ?? '',
+                    'location_latitude' => $user->location_latitude ? (float)$user->location_latitude : null,
+                    'location_longitude' => $user->location_longitude ? (float)$user->location_longitude : null,
+                    'specialties' => $currentSpecialties,
                 ],
                 'businessTypes' => [
-                    'mechanic' => 'Auto Mechanic / Repair Shop',
+                    'mechanic' => 'Auto Mechanic / General Repair',
                     'electrician' => 'Auto Electrician',
-                    'body_shop' => 'Body Shop',
+                    'body_shop' => 'Body Shop / Collision Repair',
                     'mobile_mechanic' => 'Mobile Mechanic',
                     'other' => 'Other Automotive Service',
                 ],
                 'availableSpecialties' => [
                     'engine' => 'Engine Repair',
-                    'brakes' => 'Brakes',
+                    'brakes' => 'Brake Service',
                     'electrical' => 'Electrical Systems',
                     'transmission' => 'Transmission',
                     'tires' => 'Tires & Wheels',
                     'bodywork' => 'Body Work',
                     'diagnostics' => 'Diagnostics',
-                    'maintenance' => 'General Maintenance',
-                    'air_conditioning' => 'Air Conditioning',
+                    'maintenance' => 'Maintenance',
+                    'air_conditioning' => 'A/C & Heating',
                     'suspension' => 'Suspension',
                     'exhaust' => 'Exhaust Systems',
                 ],
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-
-            Log::error('Error in expert onboarding', [
+            Log::error('Expert onboarding error', [
                 'user_id' => $user->id,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
             ]);
 
             return redirect()->route('home')
-                ->with('error', 'An error occurred while loading your profile. Please contact support.');
+                ->with('error', 'Unable to load onboarding. Please contact support.');
+        }
+    }
+
+    /**
+     * Save progress and allow user to continue later
+     */
+    public function save(Request $request)
+    {
+        $user = auth()->user();
+
+        // Ensure user is an expert
+        if ($user->user_type !== 'expert') {
+            return redirect()->route('home')
+                ->with('error', 'Access denied.');
+        }
+
+        $expertProfile = $user->expertProfile;
+
+        if (!$expertProfile) {
+            return redirect()->route('expert.onboarding.index')
+                ->with('error', 'Profile not found. Please start over.');
+        }
+
+        // Validate only the fields that are provided (partial validation)
+        $validated = $request->validate([
+            'phone' => 'nullable|string|max:20',
+            'business_name' => 'nullable|string|max:255',
+            'business_type' => 'nullable|in:mechanic,electrician,body_shop,mobile_mechanic,other',
+            'bio' => 'nullable|string|max:1000',
+            'years_experience' => 'nullable|integer|min:0|max:99',
+            'business_address' => 'nullable|string|max:500',
+            'location_latitude' => 'nullable|numeric|between:-90,90',
+            'location_longitude' => 'nullable|numeric|between:-180,180',
+            'service_radius_km' => 'nullable|integer|min:5|max:100',
+            'specialties' => 'nullable|array',
+            'specialties.*' => 'string|in:engine,brakes,electrical,transmission,tires,bodywork,diagnostics,maintenance,air_conditioning,suspension,exhaust',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            // Update user phone if provided
+            if (isset($validated['phone']) && $validated['phone']) {
+                $user->update(['phone' => $validated['phone']]);
+            }
+
+            // Update user location if provided
+            if (isset($validated['business_address']) && $validated['business_address']) {
+                $user->update([
+                    'location_address' => $validated['business_address'],
+                    'location_latitude' => $validated['location_latitude'] ?? $user->location_latitude,
+                    'location_longitude' => $validated['location_longitude'] ?? $user->location_longitude,
+                ]);
+            }
+
+            // Update expert profile with any provided fields
+            $profileData = [];
+            if (isset($validated['business_name'])) $profileData['business_name'] = $validated['business_name'];
+            if (isset($validated['business_type'])) $profileData['business_type'] = $validated['business_type'];
+            if (isset($validated['bio'])) $profileData['bio'] = $validated['bio'];
+            if (isset($validated['years_experience'])) $profileData['years_experience'] = $validated['years_experience'];
+            if (isset($validated['service_radius_km'])) $profileData['service_radius_km'] = $validated['service_radius_km'];
+
+            if (!empty($profileData)) {
+                $expertProfile->update($profileData);
+            }
+
+            // Update specialties if provided
+            if (isset($validated['specialties']) && is_array($validated['specialties'])) {
+                // Delete existing specialties
+                $expertProfile->specialties()->delete();
+
+                // Create new ones
+                foreach ($validated['specialties'] as $specialty) {
+                    $expertProfile->specialties()->create([
+                        'specialty' => $specialty,
+                    ]);
+                }
+            }
+
+            DB::commit();
+
+            Log::info('Expert profile progress saved', [
+                'user_id' => $user->id,
+                'profile_id' => $expertProfile->id,
+            ]);
+
+            return redirect()->route('expert.dashboard')
+                ->with('success', 'Progress saved! You can complete your profile anytime.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('Failed to save expert profile progress', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()
+                ->withInput()
+                ->with('error', 'Failed to save progress. Please try again.');
         }
     }
 
     /**
      * Complete the onboarding process
-     * 
-     * Validates and saves the expert profile information
      */
     public function complete(Request $request)
     {
@@ -150,7 +251,7 @@ class ExpertOnboardingController extends Controller
             $expertProfile = $user->expertProfile;
         }
 
-        // Validate the form data
+        // Validate the complete form data (all required fields)
         $validated = $request->validate([
             // Contact Information
             'phone' => 'required|string|max:20',
@@ -193,41 +294,45 @@ class ExpertOnboardingController extends Controller
                 'bio' => $validated['bio'] ?? null,
                 'years_experience' => $validated['years_experience'] ?? null,
                 'service_radius_km' => $validated['service_radius_km'],
-                'profile_completed' => true, // Mark as completed
+                'profile_completed' => true,
+                'verification_status' => 'pending', // Trigger manual review
             ]);
 
-            // Delete existing specialties
+            // Update specialties
+            // Delete all existing specialties
             $expertProfile->specialties()->delete();
 
-            // Add new specialties
+            // Create new specialties
             foreach ($validated['specialties'] as $specialty) {
-                ExpertSpecialty::create([
-                    'expert_profile_id' => $expertProfile->id,
+                $expertProfile->specialties()->create([
                     'specialty' => $specialty,
                 ]);
             }
 
             DB::commit();
 
-            Log::info('Expert profile completed successfully', [
+            Log::info('Expert onboarding completed', [
                 'user_id' => $user->id,
                 'profile_id' => $expertProfile->id,
             ]);
 
+            // TODO: Send email to admin for verification
+            // TODO: Send confirmation email to expert
+
             return redirect()->route('expert.dashboard')
-                ->with('success', 'Profile completed successfully! You can now start receiving leads.');
+                ->with('success', 'Profile completed! We\'ll review your information and notify you within 24-48 hours.');
         } catch (\Exception $e) {
             DB::rollBack();
 
-            Log::error('Error completing expert profile', [
+            Log::error('Failed to complete expert onboarding', [
                 'user_id' => $user->id,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
 
             return back()
-                ->withErrors(['error' => 'An error occurred while saving your profile. Please try again.'])
-                ->withInput();
+                ->withInput()
+                ->withErrors(['error' => 'Failed to complete profile. Please try again.']);
         }
     }
 }
