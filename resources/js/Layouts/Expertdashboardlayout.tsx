@@ -49,13 +49,13 @@ export default function ExpertDashboardLayout({ children, title }: ExpertDashboa
     { name: 'Dashboard', href: route('expert.dashboard'), icon: HomeIcon },
     { name: 'Leads', href: route('expert.leads.index'), icon: UsersIcon },
     { name: 'Jobs', href: route('expert.jobs.index'), icon: BriefcaseIcon },
-    { name: 'Schedule', href: route('expert.schedule'), icon: CalendarIcon },
+    { name: 'Schedule', href: '#', icon: CalendarIcon },
     { name: 'Reviews', href: route('expert.reviews.index'), icon: StarIcon },
     { name: 'Analytics', href: route('expert.analytics'), icon: ChartBarIcon },
     { name: 'Earnings', href: route('expert.earnings'), icon: CurrencyDollarIcon },
-    { name: 'Messages', href: route('expert.messages'), icon: ChatBubbleLeftRightIcon },
-    { name: 'Documents', href: route('expert.documents'), icon: DocumentTextIcon },
-    { name: 'Settings', href: route('expert.settings'), icon: Cog6ToothIcon },
+    { name: 'Messages', href: "#", icon: ChatBubbleLeftRightIcon },
+    { name: 'Documents', href: "#", icon: DocumentTextIcon },
+    { name: 'Settings', href: "#", icon: Cog6ToothIcon },
   ];
 
   const logout = () => {

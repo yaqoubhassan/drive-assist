@@ -21,6 +21,7 @@ class ExpertProfile extends Model
         'business_name',
         'business_type',
         'bio',
+        'profile_completed',
         'years_experience',
         'employee_count',
         'business_license_number',
@@ -79,6 +80,7 @@ class ExpertProfile extends Model
         'verified_at' => 'datetime',
         'is_featured' => 'boolean',
         'avg_rating' => 'decimal:2',
+        'profile_completed' => 'boolean',
     ];
 
     /**
@@ -127,6 +129,22 @@ class ExpertProfile extends Model
     public function scopeVerified($query)
     {
         return $query->where('verification_status', 'approved');
+    }
+
+    /**
+     * Scope to get only completed profiles
+     */
+    public function scopeCompleted($query)
+    {
+        return $query->where('profile_completed', true);
+    }
+
+    /**
+     * Scope to get profiles pending verification
+     */
+    public function scopePendingVerification($query)
+    {
+        return $query->where('verification_status', 'pending');
     }
 
     /**
