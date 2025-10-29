@@ -3,6 +3,7 @@
 use App\Http\Controllers\CarIssueController;
 use App\Http\Controllers\DrivingTipController;
 use App\Http\Controllers\ElectricVehicleController;
+use App\Http\Controllers\Expert\ExpertRegistrationController;
 use App\Http\Controllers\ExpertContactController;
 use App\Http\Controllers\ExpertController;
 use App\Http\Controllers\FluidGuideController;
@@ -14,17 +15,6 @@ use App\Http\Controllers\SeasonalChecklistController;
 use App\Http\Controllers\WarningLightController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-
-
-
-
-
-
-
-
-
-
-
 
 
 Route::get('/', function () {
@@ -153,12 +143,28 @@ Route::get('/experts/{expert}/contact', [ExpertContactController::class, 'create
 Route::post('/experts/{expert}/contact', [ExpertContactController::class, 'store'])
     ->name('experts.contact.store');
 
-Route::middleware([
-    'auth:sanctum',
-    config('jetstream.auth_session'),
-    'verified',
-])->group(function () {
-    Route::get('/dashboard', function () {
-        return Inertia::render('Dashboard');
-    })->name('dashboard');
+
+// Expert Registration Routes (guest users)
+Route::middleware('guest')->group(function () {
+    Route::get('/expert/register', [ExpertRegistrationController::class, 'create'])
+        ->name('expert.register');
+
+    Route::post('/expert/register', [ExpertRegistrationController::class, 'store'])
+        ->name('expert.register.store');
 });
+
+// Expert Dashboard (authenticated experts only)
+Route::middleware('auth')->group(function () {
+    Route::get('/expert/dashboard', [ExpertRegistrationController::class, 'dashboard'])
+        ->name('expert.dashboard');
+});
+
+// Route::middleware([
+//     'auth:sanctum',
+//     config('jetstream.auth_session'),
+//     'verified',
+// ])->group(function () {
+//     Route::get('/dashboard', function () {
+//         return Inertia::render('Dashboard');
+//     })->name('dashboard');
+// });
