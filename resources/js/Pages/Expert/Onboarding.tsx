@@ -112,32 +112,57 @@ export default function Onboarding({
     }
   };
 
-  // Navigation handlers
-  const handleNextStep = () => {
+  // Navigation handlers - FIX: Accept event parameter and prevent default
+  const handleNextStep = (e?: React.MouseEvent<HTMLButtonElement>) => {
+    // Explicitly prevent form submission
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
     if (currentStep < 5) {
+      console.log('Moving to next step:', currentStep + 1);
       setCurrentStep(currentStep + 1);
+    } else {
+      console.log('Already on final step');
     }
   };
 
-  const handlePreviousStep = () => {
+  const handlePreviousStep = (e?: React.MouseEvent<HTMLButtonElement>) => {
+    // Explicitly prevent form submission
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
     if (currentStep > 1) {
+      console.log('Moving to previous step:', currentStep - 1);
       setCurrentStep(currentStep - 1);
+    } else {
+      console.log('Already on first step');
     }
   };
 
-  const handleSaveAndExit = () => {
+  const handleSaveAndExit = (e?: React.MouseEvent<HTMLButtonElement>) => {
+    // Explicitly prevent form submission
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    console.log('Saving progress and exiting...');
     post(route('expert.onboarding.save'), {
       preserveScroll: true,
     });
   };
 
-  // Form submission
+  // Form submission - ONLY for step 5 completion
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     // Only submit if we're on step 5
     if (currentStep !== 5) {
-      console.log('Not submitting - not on final step');
+      console.warn('Form submission prevented - not on final step. Current step:', currentStep);
       return;
     }
 
@@ -257,7 +282,7 @@ export default function Onboarding({
             </a>
           </p>
         </div>
-      </div>
+      </div >
     </>
   );
 }
