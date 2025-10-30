@@ -1,0 +1,223 @@
+/* Google Places Autocomplete Custom Styling */
+/* Add this to your global CSS file (e.g., app.css or index.css) */
+
+/* Container styling - override Google's defaults */
+.pac-container {
+  border-radius: 8px !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+  margin-top: 4px !important;
+  border: 1px solid #e5e7eb !important;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+  background-color: #ffffff !important;
+  overflow: hidden !important;
+}
+
+/* Dark mode container */
+.dark .pac-container {
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
+}
+
+/* Individual suggestion items */
+.pac-item {
+  padding: 10px 14px !important;
+  cursor: pointer !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+  color: #111827 !important;
+  border-top: 1px solid #e5e7eb !important;
+  transition: background-color 0.15s ease !important;
+}
+
+.dark .pac-item {
+  color: #f9fafb !important;
+  border-top-color: #374151 !important;
+}
+
+/* Remove border from first item */
+.pac-item:first-child {
+  border-top: none !important;
+}
+
+/* Hover state */
+.pac-item:hover,
+.pac-item-selected {
+  background-color: #f3f4f6 !important;
+}
+
+.dark .pac-item:hover,
+.dark .pac-item-selected {
+  background-color: #374151 !important;
+}
+
+/* Matched query text (the part that matches what you typed) */
+.pac-item-query {
+  font-weight: 600 !important;
+  color: #2563eb !important;
+}
+
+.dark .pac-item-query {
+  color: #60a5fa !important;
+}
+
+/* Secondary text (country, city, etc.) */
+.pac-item-query + span {
+  color: #6b7280 !important;
+  font-size: 13px !important;
+}
+
+.dark .pac-item-query + span {
+  color: #9ca3af !important;
+}
+
+/* Icon styling */
+.pac-icon {
+  margin-right: 10px !important;
+  margin-top: 2px !important;
+}
+
+/* Make icons match theme */
+.pac-icon-marker {
+  filter: opacity(0.7);
+}
+
+.dark .pac-icon-marker {
+  filter: brightness(1.5) opacity(0.8);
+}
+
+/* Logo styling at bottom */
+.pac-logo::after {
+  opacity: 0.5 !important;
+}
+
+.dark .pac-logo::after {
+  filter: brightness(1.5);
+}
+
+/* Loading state */
+.pac-container::before {
+  display: none !important; /* Hide default loading indicator */
+}
+
+/* Smooth animations */
+.pac-container {
+  animation: fadeIn 0.15s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Make sure dropdown appears above other elements */
+.pac-container {
+  z-index: 9999 !important;
+}
+
+/* Scrollbar styling for dropdown */
+.pac-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.pac-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 0 8px 8px 0;
+}
+
+.dark .pac-container::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+
+.pac-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.dark .pac-container::-webkit-scrollbar-thumb {
+  background: #4b5563;
+}
+
+.pac-container::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.dark .pac-container::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+/* Focus ring for accessibility */
+.pac-item:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: -2px;
+}
+
+.dark .pac-item:focus {
+  outline-color: #60a5fa;
+}
+
+/* Powered by Google logo */
+.pac-logo {
+  padding: 8px 14px !important;
+  opacity: 0.6;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 640px) {
+  .pac-container {
+    max-width: calc(100vw - 32px) !important;
+    left: 16px !important;
+    right: 16px !important;
+  }
+  
+  .pac-item {
+    padding: 12px 16px !important;
+    font-size: 15px !important;
+  }
+}
+
+/* Print styles */
+@media print {
+  .pac-container {
+    display: none !important;
+  }
+}
+
+/* Prevent text selection in dropdown */
+.pac-item {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Better spacing for multi-line addresses */
+.pac-item span {
+  display: inline-block;
+  line-height: 1.4;
+}
+
+/* Add a subtle shadow to matched text */
+.pac-matched {
+  font-weight: 600;
+}
+
+/* Ensure text doesn't overflow */
+.pac-item {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+/* Allow secondary text to wrap on small screens */
+@media (max-width: 640px) {
+  .pac-item {
+    white-space: normal;
+  }
+}
