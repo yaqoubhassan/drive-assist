@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Head, useForm, router } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   PhoneIcon,
@@ -17,6 +17,7 @@ import {
 declare global {
   interface Window {
     google: typeof google;
+    initMap?: () => void;
   }
 }
 
@@ -59,29 +60,31 @@ interface OnboardingProps {
 
 export default function Onboarding({ expert, businessTypes, availableSpecialties }: OnboardingProps) {
   const [currentStep, setCurrentStep] = useState(expert.current_step);
-  const [locationMethod, setLocationMethod] = useState<'search' | 'map'>('search');
+  const [locationMethod, setLocationMethod] = useState<'autocomplete' | 'map'>('autocomplete');
+  const [mapsLoaded, setMapsLoaded] = useState(false);
+
+  const autocompleteRef = useRef<HTMLInputElement>(null);
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<google.maps.Map | null>(null);
   const markerInstance = useRef<google.maps.Marker | null>(null);
-  const autocompleteRef = useRef<HTMLInputElement>(null);
   const autocompleteInstance = useRef<google.maps.places.Autocomplete | null>(null);
 
   const { data, setData, post, processing, errors } = useForm({
-    current_step: currentStep,
+    current_step: expert.current_step,
     phone: expert.phone || '',
     business_name: expert.business_name || '',
-    business_type: expert.business_type || 'mechanic',
+    business_type: expert.business_type || '',
     bio: expert.bio || '',
     years_experience: expert.years_experience || null,
     employee_count: expert.employee_count || null,
     service_radius_km: expert.service_radius_km || 25,
     business_address: expert.business_address || '',
-    location_latitude: expert.location_latitude || null,
-    location_longitude: expert.location_longitude || null,
+    location_latitude: expert.location_latitude,
+    location_longitude: expert.location_longitude,
     specialties: expert.specialties || [],
-    hourly_rate_min: expert.hourly_rate_min || null,
-    hourly_rate_max: expert.hourly_rate_max || null,
-    diagnostic_fee: expert.diagnostic_fee || null,
+    hourly_rate_min: expert.hourly_rate_min,
+    hourly_rate_max: expert.hourly_rate_max,
+    diagnostic_fee: expert.diagnostic_fee,
     accepts_emergency: expert.accepts_emergency || false,
     monday_open: expert.monday_open || '',
     monday_close: expert.monday_close || '',
@@ -104,148 +107,161 @@ export default function Onboarding({ expert, businessTypes, availableSpecialties
     setData('current_step', currentStep);
   }, [currentStep]);
 
-  // Load Google Maps Script
+  // ✅ FIX 1: Load Google Maps Script with async/defer and callback
   useEffect(() => {
     if (window.google && window.google.maps) {
+      setMapsLoaded(true);
       return; // Already loaded
     }
 
+    // Create callback function
+    window.initMap = () => {
+      setMapsLoaded(true);
+      console.log('Google Maps loaded successfully');
+    };
+
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_KEY}&libraries=places`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_KEY}&libraries=places&callback=initMap&loading=async`;
     script.async = true;
     script.defer = true;
+    script.onerror = () => {
+      console.error('Failed to load Google Maps');
+    };
     document.head.appendChild(script);
+
+    return () => {
+      // Cleanup if component unmounts
+      if (window.initMap) {
+        delete window.initMap;
+      }
+    };
   }, []);
 
-  // Initialize Google Places Autocomplete
+  // ✅ FIX 2: Initialize Google Places Autocomplete when Maps is loaded
   useEffect(() => {
-    if (!autocompleteRef.current || !window.google || !window.google.maps) return;
-    if (autocompleteInstance.current) return; // Already initialized
+    if (!mapsLoaded || !autocompleteRef.current || autocompleteInstance.current) {
+      return;
+    }
 
-    const autocomplete = new window.google.maps.places.Autocomplete(
-      autocompleteRef.current,
-      {
-        types: ['address'],
-        componentRestrictions: { country: ['us', 'gh', 'gb'] },
-      }
-    );
+    try {
+      const autocomplete = new window.google.maps.places.Autocomplete(
+        autocompleteRef.current,
+        {
+          types: ['address'],
+          componentRestrictions: { country: ['us', 'gh', 'gb'] },
+        }
+      );
 
-    autocomplete.addListener('place_changed', () => {
-      const place = autocomplete.getPlace();
+      autocomplete.addListener('place_changed', () => {
+        const place = autocomplete.getPlace();
 
-      if (!place.geometry || !place.geometry.location) {
-        return;
-      }
+        if (!place.geometry || !place.geometry.location) {
+          return;
+        }
 
-      const lat = place.geometry.location.lat();
-      const lng = place.geometry.location.lng();
-
-      setData((prev) => ({
-        ...prev,
-        business_address: place.formatted_address || '',
-        location_latitude: lat,
-        location_longitude: lng,
-      }));
-
-      // Update map if it exists
-      if (mapInstance.current) {
-        mapInstance.current.setCenter({ lat, lng });
-        updateMarker(lat, lng);
-      }
-    });
-
-    autocompleteInstance.current = autocomplete;
-  }, [currentStep]);
-
-  // Initialize Google Map
-  useEffect(() => {
-    // Only initialize when on step 2 and Google Maps is loaded
-    if (!window.google || !window.google.maps || currentStep !== 2 || locationMethod !== 'map') return;
-    if (!mapRef.current) return;
-    if (mapInstance.current) return; // Already initialized
-
-    const defaultLat = data.location_latitude || 40.7128;
-    const defaultLng = data.location_longitude || -74.0060;
-
-    const map = new window.google.maps.Map(mapRef.current, {
-      center: { lat: defaultLat, lng: defaultLng },
-      zoom: 12,
-      streetViewControl: false,
-      mapTypeControl: false,
-      fullscreenControl: true,
-    });
-
-    // Add click listener
-    map.addListener('click', (e: google.maps.MapMouseEvent) => {
-      if (e.latLng) {
-        const lat = e.latLng.lat();
-        const lng = e.latLng.lng();
-
-        updateMarker(lat, lng);
-        reverseGeocode(lat, lng);
+        const lat = place.geometry.location.lat();
+        const lng = place.geometry.location.lng();
 
         setData((prev) => ({
           ...prev,
+          business_address: place.formatted_address || '',
           location_latitude: lat,
           location_longitude: lng,
         }));
-      }
-    });
 
-    // Add initial marker if we have coordinates
-    if (data.location_latitude && data.location_longitude) {
-      updateMarker(data.location_latitude, data.location_longitude);
+        // Update map if it exists
+        if (mapInstance.current) {
+          mapInstance.current.setCenter({ lat, lng });
+          updateMarker(lat, lng);
+        }
+      });
+
+      autocompleteInstance.current = autocomplete;
+    } catch (error) {
+      console.error('Error initializing autocomplete:', error);
+    }
+  }, [mapsLoaded, currentStep]);
+
+  // ✅ FIX 3: Initialize Google Map when ready
+  useEffect(() => {
+    if (!mapsLoaded || !mapRef.current || currentStep !== 2 || locationMethod !== 'map') {
+      return;
     }
 
-    mapInstance.current = map;
-  }, [currentStep, locationMethod]);
+    if (mapInstance.current) {
+      return; // Already initialized
+    }
+
+    try {
+      const initialCenter = {
+        lat: data.location_latitude || 5.6037,
+        lng: data.location_longitude || -0.1870,
+      };
+
+      const map = new window.google.maps.Map(mapRef.current, {
+        center: initialCenter,
+        zoom: 15,
+        mapTypeControl: false,
+        streetViewControl: false,
+      });
+
+      // Add click listener
+      map.addListener('click', (e: google.maps.MapMouseEvent) => {
+        if (e.latLng) {
+          const lat = e.latLng.lat();
+          const lng = e.latLng.lng();
+
+          setData((prev) => ({
+            ...prev,
+            location_latitude: lat,
+            location_longitude: lng,
+          }));
+
+          updateMarker(lat, lng);
+
+          // Reverse geocode to get address
+          const geocoder = new window.google.maps.Geocoder();
+          geocoder.geocode({ location: e.latLng }, (results, status) => {
+            if (status === 'OK' && results && results[0]) {
+              setData('business_address', results[0].formatted_address);
+            }
+          });
+        }
+      });
+
+      mapInstance.current = map;
+
+      // Add marker if location exists
+      if (data.location_latitude && data.location_longitude) {
+        updateMarker(data.location_latitude, data.location_longitude);
+      }
+    } catch (error) {
+      console.error('Error initializing map:', error);
+    }
+  }, [mapsLoaded, currentStep, locationMethod]);
 
   const updateMarker = (lat: number, lng: number) => {
-    if (!mapInstance.current || !window.google) return;
+    if (!mapInstance.current) return;
 
-    // Remove old marker
     if (markerInstance.current) {
       markerInstance.current.setMap(null);
     }
 
-    // Create new marker
-    const marker = new window.google.maps.Marker({
-      position: { lat, lng },
-      map: mapInstance.current,
-      animation: window.google.maps.Animation.DROP,
-      title: 'Your Business Location',
-    });
-
-    markerInstance.current = marker;
-  };
-
-  const reverseGeocode = async (lat: number, lng: number) => {
-    if (!window.google || !window.google.maps) return;
-
-    const geocoder = new window.google.maps.Geocoder();
-
     try {
-      const response = await geocoder.geocode({ location: { lat, lng } });
-      if (response.results && response.results[0]) {
-        setData((prev) => ({
-          ...prev,
-          business_address: response.results[0].formatted_address,
-        }));
-      }
+      markerInstance.current = new window.google.maps.Marker({
+        position: { lat, lng },
+        map: mapInstance.current,
+        title: 'Your Business Location',
+      });
     } catch (error) {
-      console.error('Geocoding error:', error);
+      console.error('Error creating marker:', error);
     }
   };
 
-  const detectCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      alert('Geolocation is not supported by your browser');
-      return;
-    }
-
-    const button = document.getElementById('detect-location-btn');
+  const handleUseCurrentLocation = () => {
+    const button = document.getElementById('use-location-btn');
     if (button) {
-      button.textContent = 'Detecting...';
+      button.textContent = 'Getting location...';
       (button as HTMLButtonElement).disabled = true;
     }
 
@@ -260,34 +276,41 @@ export default function Onboarding({ expert, businessTypes, availableSpecialties
           location_longitude: lng,
         }));
 
-        // Update map center and marker
+        // Reverse geocode to get address
+        if (mapsLoaded) {
+          const geocoder = new window.google.maps.Geocoder();
+          geocoder.geocode(
+            { location: { lat, lng } },
+            (results, status) => {
+              if (status === 'OK' && results && results[0]) {
+                setData('business_address', results[0].formatted_address);
+              }
+
+              if (button) {
+                button.textContent = '✓ Location Set';
+                setTimeout(() => {
+                  button.textContent = '📍 Use My Current Location';
+                  (button as HTMLButtonElement).disabled = false;
+                }, 2000);
+              }
+            }
+          );
+        }
+
+        // Update map
         if (mapInstance.current) {
           mapInstance.current.setCenter({ lat, lng });
-          mapInstance.current.setZoom(15);
           updateMarker(lat, lng);
         }
-
-        // Get address from coordinates
-        reverseGeocode(lat, lng);
-
-        if (button) {
-          button.textContent = '📍 Use My Current Location';
-          (button as HTMLButtonElement).disabled = false;
-        }
-
-        // Switch to map view to show the detected location
-        setLocationMethod('map');
       },
       (error) => {
-        console.error('Geolocation error:', error);
-
-        let errorMessage = 'Could not detect your location. ';
+        let errorMessage = 'Error getting location: ';
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            errorMessage += 'Please allow location access in your browser.';
+            errorMessage += 'Location permission denied.';
             break;
           case error.POSITION_UNAVAILABLE:
-            errorMessage += 'Location information is unavailable.';
+            errorMessage += 'Location unavailable.';
             break;
           case error.TIMEOUT:
             errorMessage += 'Location request timed out.';
@@ -318,26 +341,46 @@ export default function Onboarding({ expert, businessTypes, availableSpecialties
     );
   };
 
-  const handleSaveAndExit = () => {
+  const handleSaveAndExit = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     post(route('expert.onboarding.save'), {
       preserveScroll: true,
     });
   };
 
-  const handleNextStep = () => {
+  // ✅ FIX 4: Prevent form submission when clicking Next
+  const handleNextStep = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     if (currentStep < 5) {
       setCurrentStep(currentStep + 1);
     }
   };
 
-  const handlePreviousStep = () => {
+  const handlePreviousStep = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     }
   };
 
+  // ✅ FIX 5: Only submit when on step 5
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Only submit if we're on step 5
+    if (currentStep !== 5) {
+      console.log('Not submitting - not on final step');
+      return;
+    }
+
+    console.log('Submitting onboarding completion...');
     post(route('expert.onboarding.complete'));
   };
 
@@ -370,7 +413,7 @@ export default function Onboarding({ expert, businessTypes, availableSpecialties
     const openTime = data[`${day}_open`];
     const closeTime = data[`${day}_close`];
 
-    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
     const updates: any = {};
 
     days.forEach(d => {
@@ -488,49 +531,88 @@ export default function Onboarding({ expert, businessTypes, availableSpecialties
                         type="tel"
                         value={data.phone}
                         onChange={(e) => setData('phone', e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                        placeholder="(555) 123-4567"
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="+233 XX XXX XXXX"
                         required
                       />
-                      {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone}</p>}
+                      {errors.phone && <p className="mt-2 text-sm text-red-600">{errors.phone}</p>}
                     </div>
 
-                    {/* Business Name */}
-                    <div>
-                      <label htmlFor="business_name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Business Name *
-                      </label>
-                      <input
-                        id="business_name"
-                        type="text"
-                        value={data.business_name}
-                        onChange={(e) => setData('business_name', e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                        placeholder="John's Auto Repair"
-                        required
-                      />
-                      {errors.business_name && <p className="mt-1 text-sm text-red-600">{errors.business_name}</p>}
+                    <div className='grid md:grid-cols-2 grid-cols-1 gap-4'>
+                      {/* Business Name */}
+                      <div>
+                        <label htmlFor="business_name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Business Name *
+                        </label>
+                        <input
+                          id="business_name"
+                          type="text"
+                          value={data.business_name}
+                          onChange={(e) => setData('business_name', e.target.value)}
+                          className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="John's Auto Repair"
+                          required
+                        />
+                        {errors.business_name && <p className="mt-2 text-sm text-red-600">{errors.business_name}</p>}
+                      </div>
+
+                      {/* Business Type */}
+                      <div>
+                        <label htmlFor="business_type" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Business Type *
+                        </label>
+                        <select
+                          id="business_type"
+                          value={data.business_type}
+                          onChange={(e) => setData('business_type', e.target.value)}
+                          className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          required
+                        >
+                          <option value="">Select a business type</option>
+                          {Object.entries(businessTypes).map(([value, label]) => (
+                            <option key={value} value={value}>
+                              {label}
+                            </option>
+                          ))}
+                        </select>
+                        {errors.business_type && <p className="mt-2 text-sm text-red-600">{errors.business_type}</p>}
+                      </div>
                     </div>
 
-                    {/* Business Type */}
-                    <div>
-                      <label htmlFor="business_type" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Business Type *
-                      </label>
-                      <select
-                        id="business_type"
-                        value={data.business_type}
-                        onChange={(e) => setData('business_type', e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                        required
-                      >
-                        {Object.entries(businessTypes).map(([value, label]) => (
-                          <option key={value} value={value}>
-                            {label}
-                          </option>
-                        ))}
-                      </select>
-                      {errors.business_type && <p className="mt-1 text-sm text-red-600">{errors.business_type}</p>}
+                    <div className='grid md:grid-cols-2 grid-cols-1 gap-4'>
+                      {/* Years of Experience */}
+                      <div>
+                        <label htmlFor="years_experience" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Years of Experience (Optional)
+                        </label>
+                        <input
+                          id="years_experience"
+                          type="number"
+                          min="0"
+                          max="99"
+                          value={data.years_experience || ''}
+                          onChange={(e) => setData('years_experience', parseInt(e.target.value) || null)}
+                          className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="10"
+                        />
+                      </div>
+
+                      {/* Employee Count */}
+                      <div>
+                        <label htmlFor="employee_count" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Number of Employees (Optional)
+                        </label>
+                        <input
+                          id="employee_count"
+                          type="number"
+                          min="1"
+                          max="999"
+                          value={data.employee_count || ''}
+                          onChange={(e) => setData('employee_count', parseInt(e.target.value) || null)}
+                          className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="5"
+                        />
+                      </div>
                     </div>
 
                     {/* Bio */}
@@ -540,44 +622,16 @@ export default function Onboarding({ expert, businessTypes, availableSpecialties
                       </label>
                       <textarea
                         id="bio"
+                        rows={4}
                         value={data.bio}
                         onChange={(e) => setData('bio', e.target.value)}
-                        rows={4}
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                        placeholder="Tell potential customers about your expertise and what makes your business special..."
+                        maxLength={500}
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                        placeholder="Tell customers about your business..."
                       />
-                      {errors.bio && <p className="mt-1 text-sm text-red-600">{errors.bio}</p>}
-                    </div>
-
-                    {/* Years of Experience & Employee Count */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label htmlFor="years_experience" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Years of Experience
-                        </label>
-                        <input
-                          id="years_experience"
-                          type="number"
-                          value={data.years_experience || ''}
-                          onChange={(e) => setData('years_experience', e.target.value ? parseInt(e.target.value) : null)}
-                          className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                          min="0"
-                          max="99"
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="employee_count" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Number of Employees
-                        </label>
-                        <input
-                          id="employee_count"
-                          type="number"
-                          value={data.employee_count || ''}
-                          onChange={(e) => setData('employee_count', e.target.value ? parseInt(e.target.value) : null)}
-                          className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                          min="1"
-                        />
-                      </div>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 text-right">
+                        {data.bio.length} / 500 characters
+                      </p>
                     </div>
                   </motion.div>
                 )}
@@ -596,33 +650,18 @@ export default function Onboarding({ expert, businessTypes, availableSpecialties
                         Business Location
                       </h2>
                       <p className="text-gray-600 dark:text-gray-400">
-                        Help customers find you by setting your exact location
-                      </p>
-                    </div>
-
-                    {/* Auto-detect Location Button */}
-                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                      <button
-                        type="button"
-                        id="detect-location-btn"
-                        onClick={detectCurrentLocation}
-                        className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors flex items-center justify-center"
-                      >
-                        📍 Use My Current Location
-                      </button>
-                      <p className="mt-2 text-xs text-blue-800 dark:text-blue-200 text-center">
-                        Click to automatically detect your location
+                        Help customers find you by providing your business address
                       </p>
                     </div>
 
                     {/* Location Method Toggle */}
-                    <div className="flex gap-4 mb-4">
+                    <div className="flex gap-4 p-1 bg-gray-100 dark:bg-gray-700 rounded-lg">
                       <button
                         type="button"
-                        onClick={() => setLocationMethod('search')}
-                        className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all ${locationMethod === 'search'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        onClick={() => setLocationMethod('autocomplete')}
+                        className={`flex-1 py-2 px-4 rounded-md font-medium transition-colors ${locationMethod === 'autocomplete'
+                          ? 'bg-white dark:bg-gray-800 text-blue-600 shadow-sm'
+                          : 'text-gray-600 dark:text-gray-400'
                           }`}
                       >
                         🔍 Search Address
@@ -630,55 +669,62 @@ export default function Onboarding({ expert, businessTypes, availableSpecialties
                       <button
                         type="button"
                         onClick={() => setLocationMethod('map')}
-                        className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all ${locationMethod === 'map'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        className={`flex-1 py-2 px-4 rounded-md font-medium transition-colors ${locationMethod === 'map'
+                          ? 'bg-white dark:bg-gray-800 text-blue-600 shadow-sm'
+                          : 'text-gray-600 dark:text-gray-400'
                           }`}
                       >
-                        🗺️ Pick on Map
+                        📍 Use Map
                       </button>
                     </div>
 
-                    {/* Search Method */}
-                    {locationMethod === 'search' && (
-                      <div>
-                        <label htmlFor="business_address" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Business Address *
-                        </label>
-                        <div className="relative">
-                          <MapPinIcon className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    {/* Autocomplete Search */}
+                    {locationMethod === 'autocomplete' && (
+                      <div className="space-y-4">
+                        <div>
+                          <label htmlFor="business_address" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Business Address *
+                          </label>
                           <input
-                            id="business_address"
                             ref={autocompleteRef}
+                            id="business_address"
                             type="text"
                             value={data.business_address}
                             onChange={(e) => setData('business_address', e.target.value)}
-                            className="pl-10 w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             placeholder="Start typing your address..."
                             required
                           />
+                          {errors.business_address && <p className="mt-2 text-sm text-red-600">{errors.business_address}</p>}
                         </div>
-                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                          💡 Start typing and select from suggestions
-                        </p>
-                        {errors.business_address && <p className="mt-1 text-sm text-red-600">{errors.business_address}</p>}
+
+                        <button
+                          type="button"
+                          id="use-location-btn"
+                          onClick={handleUseCurrentLocation}
+                          className="w-full py-3 px-4 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors font-medium"
+                        >
+                          📍 Use My Current Location
+                        </button>
                       </div>
                     )}
 
-                    {/* Map Method */}
+                    {/* Map View */}
                     {locationMethod === 'map' && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Click on the map to set your location
-                        </label>
+                      <div className="space-y-4">
                         <div
                           ref={mapRef}
-                          className="w-full h-96 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700"
+                          className="w-full h-96 rounded-lg border-2 border-gray-300 dark:border-gray-600"
                         />
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          Click on the map to set your business location
+                        </p>
                         {data.business_address && (
-                          <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">
-                            📍 Selected: {data.business_address}
-                          </p>
+                          <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                            <p className="text-sm text-green-800 dark:text-green-200">
+                              <strong>Selected:</strong> {data.business_address}
+                            </p>
+                          </div>
                         )}
                       </div>
                     )}
@@ -686,21 +732,22 @@ export default function Onboarding({ expert, businessTypes, availableSpecialties
                     {/* Service Radius */}
                     <div>
                       <label htmlFor="service_radius_km" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Service Radius (km)
+                        Service Radius: {data.service_radius_km} km
                       </label>
                       <input
                         id="service_radius_km"
-                        type="number"
-                        value={data.service_radius_km}
-                        onChange={(e) => setData('service_radius_km', parseInt(e.target.value))}
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        type="range"
                         min="5"
                         max="100"
-                        required
+                        step="5"
+                        value={data.service_radius_km}
+                        onChange={(e) => setData('service_radius_km', parseInt(e.target.value))}
+                        className="w-full"
                       />
-                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                        How far are you willing to travel for service calls?
-                      </p>
+                      <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        <span>5 km</span>
+                        <span>100 km</span>
+                      </div>
                     </div>
                   </motion.div>
                 )}
@@ -738,7 +785,7 @@ export default function Onboarding({ expert, businessTypes, availableSpecialties
                           <div className="flex items-start">
                             <div
                               className={`flex-shrink-0 w-6 h-6 rounded border-2 flex items-center justify-center mr-3 ${data.specialties.includes(value)
-                                ? 'border-blue-600 bg-blue-600'
+                                ? 'bg-blue-600 border-blue-600'
                                 : 'border-gray-300 dark:border-gray-600'
                                 }`}
                             >
@@ -746,26 +793,18 @@ export default function Onboarding({ expert, businessTypes, availableSpecialties
                                 <CheckCircleSolid className="w-4 h-4 text-white" />
                               )}
                             </div>
-                            <div>
-                              <p className="font-medium text-gray-900 dark:text-white text-sm">
-                                {label}
-                              </p>
-                            </div>
+                            <span className="text-sm font-medium text-gray-900 dark:text-white">
+                              {label}
+                            </span>
                           </div>
                         </button>
                       ))}
                     </div>
-
-                    {errors.specialties && (
-                      <p className="text-sm text-red-600">{errors.specialties}</p>
-                    )}
-
-                    {data.specialties.length > 0 && (
-                      <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-                        <p className="text-sm text-green-800 dark:text-green-200">
-                          ✓ {data.specialties.length} {data.specialties.length === 1 ? 'specialty' : 'specialties'} selected
-                        </p>
-                      </div>
+                    {errors.specialties && <p className="mt-2 text-sm text-red-600">{errors.specialties}</p>}
+                    {data.specialties.length === 0 && (
+                      <p className="text-sm text-yellow-600 dark:text-yellow-400">
+                        Please select at least one specialty
+                      </p>
                     )}
                   </motion.div>
                 )}
@@ -784,70 +823,94 @@ export default function Onboarding({ expert, businessTypes, availableSpecialties
                         Pricing Information
                       </h2>
                       <p className="text-gray-600 dark:text-gray-400">
-                        Help customers understand your rates (all optional)
+                        Set your rates (all fields are optional)
                       </p>
                     </div>
 
                     {/* Hourly Rate Range */}
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Minimum Hourly Rate ($)
+                        <label htmlFor="hourly_rate_min" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Hourly Rate (Min)
                         </label>
-                        <input
-                          type="number"
-                          value={data.hourly_rate_min || ''}
-                          onChange={(e) => setData('hourly_rate_min', e.target.value ? parseFloat(e.target.value) : null)}
-                          className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                          step="0.01"
-                          min="0"
-                          placeholder="75.00"
-                        />
+                        <div className="relative">
+                          <span className="absolute left-3 top-3 text-gray-500">GH₵</span>
+                          <input
+                            id="hourly_rate_min"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={data.hourly_rate_min || ''}
+                            onChange={(e) => setData('hourly_rate_min', parseFloat(e.target.value) || null)}
+                            className="w-full pl-12 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="50.00"
+                          />
+                        </div>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Maximum Hourly Rate ($)
+                        <label htmlFor="hourly_rate_max" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Hourly Rate (Max)
                         </label>
-                        <input
-                          type="number"
-                          value={data.hourly_rate_max || ''}
-                          onChange={(e) => setData('hourly_rate_max', e.target.value ? parseFloat(e.target.value) : null)}
-                          className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                          step="0.01"
-                          min="0"
-                          placeholder="150.00"
-                        />
+                        <div className="relative">
+                          <span className="absolute left-3 top-3 text-gray-500">GH₵</span>
+                          <input
+                            id="hourly_rate_max"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={data.hourly_rate_max || ''}
+                            onChange={(e) => setData('hourly_rate_max', parseFloat(e.target.value) || null)}
+                            className="w-full pl-12 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="150.00"
+                          />
+                        </div>
                       </div>
                     </div>
 
                     {/* Diagnostic Fee */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Diagnostic Fee ($)
+                      <label htmlFor="diagnostic_fee" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Diagnostic Fee
                       </label>
-                      <input
-                        type="number"
-                        value={data.diagnostic_fee || ''}
-                        onChange={(e) => setData('diagnostic_fee', e.target.value ? parseFloat(e.target.value) : null)}
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                        step="0.01"
-                        min="0"
-                        placeholder="75.00"
-                      />
+                      <div className="relative">
+                        <span className="absolute left-3 top-3 text-gray-500">GH₵</span>
+                        <input
+                          id="diagnostic_fee"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={data.diagnostic_fee || ''}
+                          onChange={(e) => setData('diagnostic_fee', parseFloat(e.target.value) || null)}
+                          className="w-full pl-12 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="75.00"
+                        />
+                      </div>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        Fee for initial vehicle inspection and diagnosis
+                      </p>
                     </div>
 
                     {/* Emergency Service */}
-                    <div className="flex items-center">
-                      <input
-                        type="checkbox"
-                        id="accepts_emergency"
-                        checked={data.accepts_emergency}
-                        onChange={(e) => setData('accepts_emergency', e.target.checked)}
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded"
-                      />
-                      <label htmlFor="accepts_emergency" className="ml-2 text-sm text-gray-700 dark:text-gray-300">
-                        I accept emergency service calls
-                      </label>
+                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                      <div>
+                        <p className="font-medium text-gray-900 dark:text-white">
+                          Accept Emergency Calls
+                        </p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          Available for urgent after-hours service
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setData('accepts_emergency', !data.accepts_emergency)}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${data.accepts_emergency ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'
+                          }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${data.accepts_emergency ? 'translate-x-6' : 'translate-x-1'
+                            }`}
+                        />
+                      </button>
                     </div>
                   </motion.div>
                 )}
@@ -866,38 +929,51 @@ export default function Onboarding({ expert, businessTypes, availableSpecialties
                         Operating Hours
                       </h2>
                       <p className="text-gray-600 dark:text-gray-400">
-                        Set your business hours (optional - you can update these later)
+                        Set your business hours (all optional)
                       </p>
                     </div>
 
-                    {/* Days of the week */}
+                    {/* Days of Week */}
                     {(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const).map((day) => (
-                      <div key={day} className="flex items-center gap-4">
-                        <div className="w-32">
-                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 capitalize">
+                      <div key={day} className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white capitalize">
                             {day}
-                          </p>
+                          </h3>
+                          {day !== 'sunday' && (
+                            <button
+                              type="button"
+                              onClick={() => applyToAllDays(day)}
+                              className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                            >
+                              Apply to all
+                            </button>
+                          )}
                         </div>
-                        <input
-                          type="time"
-                          value={data[`${day}_open`] || ''}
-                          onChange={(e) => setData(`${day}_open`, e.target.value)}
-                          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                        />
-                        <span className="text-gray-500">to</span>
-                        <input
-                          type="time"
-                          value={data[`${day}_close`] || ''}
-                          onChange={(e) => setData(`${day}_close`, e.target.value)}
-                          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => applyToAllDays(day)}
-                          className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400"
-                        >
-                          Apply to all
-                        </button>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">
+                              Open
+                            </label>
+                            <input
+                              type="time"
+                              value={data[`${day}_open`] || ''}
+                              onChange={(e) => setData(`${day}_open`, e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">
+                              Close
+                            </label>
+                            <input
+                              type="time"
+                              value={data[`${day}_close`] || ''}
+                              onChange={(e) => setData(`${day}_close`, e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </motion.div>
@@ -937,7 +1013,7 @@ export default function Onboarding({ expert, businessTypes, availableSpecialties
                     type="button"
                     onClick={handleNextStep}
                     disabled={!isStepComplete(currentStep)}
-                    className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition-colors flex items-center"
+                    className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition-colors flex items-center disabled:cursor-not-allowed"
                   >
                     Next
                     <ArrowRightIcon className="w-5 h-5 ml-2" />
@@ -946,7 +1022,7 @@ export default function Onboarding({ expert, businessTypes, availableSpecialties
                   <button
                     type="submit"
                     disabled={processing || !isStepComplete(1) || !isStepComplete(2) || !isStepComplete(3)}
-                    className="px-6 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition-colors flex items-center"
+                    className="px-6 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition-colors flex items-center disabled:cursor-not-allowed"
                   >
                     {processing ? 'Submitting...' : 'Complete Profile'}
                     <CheckCircleSolid className="w-5 h-5 ml-2" />
@@ -958,7 +1034,7 @@ export default function Onboarding({ expert, businessTypes, availableSpecialties
 
           {/* Help Text */}
           <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
-            Nee help? <a href="mailto:support@driveassist.com" className="text-blue-600 hover:underline">Contact Support</a>
+            Need help? <a href="mailto:support@driveassist.com" className="text-blue-600 hover:underline">Contact Support</a>
           </p>
         </div>
       </div>
