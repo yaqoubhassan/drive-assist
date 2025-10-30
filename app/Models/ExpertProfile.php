@@ -51,6 +51,7 @@ class ExpertProfile extends Model
         'profile_views',
         'total_jobs',
         'avg_rating',
+        'current_onboarding_step'
     ];
 
     /**

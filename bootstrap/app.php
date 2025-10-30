@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'driver' => \App\Http\Middleware\EnsureUserIsDriver::class,
             'expert' => \App\Http\Middleware\EnsureUserIsExpert::class,
+            'onboarding.check' => \App\Http\Middleware\RedirectIfOnboardingIncomplete::class,
         ]);
         //
     })

@@ -322,7 +322,6 @@ Route::prefix('driver')->name('driver.')->middleware(['auth', 'driver'])->group(
 | - Business settings and profile
 |
 */
-
 Route::prefix('expert')->name('expert.')->middleware(['auth', 'expert'])->group(function () {
     // Onboarding (for newly registered experts who haven't completed profile)
     Route::get('/onboarding', [ExpertOnboardingController::class, 'index'])
@@ -331,6 +330,10 @@ Route::prefix('expert')->name('expert.')->middleware(['auth', 'expert'])->group(
         ->name('onboarding.save');
     Route::post('/onboarding/complete', [ExpertOnboardingController::class, 'complete'])
         ->name('onboarding.complete');
+});
+
+
+Route::prefix('expert')->name('expert.')->middleware(['auth', 'expert', 'onboarding.check'])->group(function () {
     // Dashboard
     Route::get('/dashboard', [ExpertDashboardController::class, 'index'])->name('dashboard');
 
