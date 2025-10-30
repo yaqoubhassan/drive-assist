@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface UseGoogleMapsOptions {
   apiKey: string;
@@ -8,66 +8,84 @@ interface UseGoogleMapsOptions {
 interface UseGoogleMapsReturn {
   mapsLoaded: boolean;
   isLoading: boolean;
-  error: string | null;
+  error: Error | null;
 }
 
-export function useGoogleMaps({ apiKey, libraries = ['places'] }: UseGoogleMapsOptions): UseGoogleMapsReturn {
+export function useGoogleMaps({
+  apiKey,
+  libraries = [],
+}: UseGoogleMapsOptions): UseGoogleMapsReturn {
   const [mapsLoaded, setMapsLoaded] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const scriptLoadedRef = useRef(false);
 
   useEffect(() => {
-    // Check if Google Maps is already loaded
-    if (window.google && window.google.maps) {
+    // Check if already loaded
+    if (
+      window.google &&
+      window.google.maps &&
+      (!libraries.includes('places') || window.google.maps.places)
+    ) {
       setMapsLoaded(true);
       setIsLoading(false);
+      scriptLoadedRef.current = true;
+      console.log('✅ Google Maps already loaded');
       return;
     }
 
-    // Prevent multiple script loads
-    if (scriptLoadedRef.current || isLoading) {
+    // Prevent duplicate loading
+    if (scriptLoadedRef.current || document.querySelector('script[src*="maps.googleapis.com"]')) {
+      console.log('⏳ Google Maps script already loading...');
       return;
     }
 
-    setIsLoading(true);
+    if (!apiKey) {
+      const err = new Error('Google Maps API key is required');
+      setError(err);
+      setIsLoading(false);
+      console.error('❌', err.message);
+      return;
+    }
+
     scriptLoadedRef.current = true;
+    console.log('🚀 Loading Google Maps...');
 
-    // Create unique callback name
-    const callbackName = 'initGoogleMaps_' + Date.now();
-
-    // Define callback function
-    (window as any)[callbackName] = () => {
-      console.log('✅ Google Maps loaded successfully');
-      setMapsLoaded(true);
-      setIsLoading(false);
-      setError(null);
-
-      // Cleanup callback
-      delete (window as any)[callbackName];
-    };
-
-    // Create and append script
     const script = document.createElement('script');
-    const librariesParam = libraries.join(',');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=${librariesParam}&callback=${callbackName}&loading=async`;
+    const params = new URLSearchParams({
+      key: apiKey,
+      libraries: libraries.join(','),
+      callback: '__googleMapsCallback',
+    });
+
+    script.src = `https://maps.googleapis.com/maps/api/js?${params.toString()}&loading=async`;
     script.async = true;
     script.defer = true;
 
+    // Global callback
+    (window as any).__googleMapsCallback = () => {
+      console.log('✅ Google Maps loaded successfully');
+      setMapsLoaded(true);
+      setIsLoading(false);
+      delete (window as any).__googleMapsCallback;
+    };
+
     script.onerror = () => {
-      console.error('❌ Failed to load Google Maps');
-      setError('Failed to load Google Maps. Please check your API key.');
+      const err = new Error('Failed to load Google Maps');
+      console.error('❌', err.message);
+      setError(err);
       setIsLoading(false);
       scriptLoadedRef.current = false;
-      delete (window as any)[callbackName];
     };
 
     document.head.appendChild(script);
 
-    // Cleanup function
     return () => {
-      // Note: We don't remove the script as it might be used by other components
-      // The callback will be cleaned up after execution
+      // Cleanup is tricky with Google Maps, so we keep the script
+      // but reset our loading state if component unmounts early
+      if (isLoading) {
+        setIsLoading(false);
+      }
     };
   }, [apiKey, libraries]);
 
@@ -92,6 +110,9 @@ export function useGoogleAutocomplete({
 }: UseGoogleAutocompleteOptions) {
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const listenerRef = useRef<google.maps.MapsEventListener | null>(null);
+  const clickOutsideListenerRef = useRef<((event: MouseEvent) => void) | null>(null);
+  const isInitializedRef = useRef(false); // Track if already initialized
+  const inputElementRef = useRef<HTMLInputElement | null>(null); // Store input element
 
   useEffect(() => {
     // Wait for maps to load and input to be available
@@ -99,245 +120,283 @@ export function useGoogleAutocomplete({
       return;
     }
 
-    // Cleanup existing instance
-    if (autocompleteRef.current && listenerRef.current) {
-      google.maps.event.removeListener(listenerRef.current);
-      google.maps.event.clearInstanceListeners(inputRef.current);
+    // CRITICAL: Prevent double initialization in StrictMode
+    // Only initialize once per input element
+    if (isInitializedRef.current && inputElementRef.current === inputRef.current) {
+      console.log('⚠️ Autocomplete already initialized for this input, skipping');
+      return;
+    }
+
+    console.log('🔧 Initializing autocomplete...');
+
+    // Store the input element reference
+    inputElementRef.current = inputRef.current;
+
+    // Cleanup existing instance if any
+    if (autocompleteRef.current) {
+      console.log('🧹 Cleaning up existing autocomplete instance');
+
+      if (listenerRef.current) {
+        google.maps.event.removeListener(listenerRef.current);
+        listenerRef.current = null;
+      }
+
+      if (inputRef.current) {
+        google.maps.event.clearInstanceListeners(inputRef.current);
+      }
+
       autocompleteRef.current = null;
-      listenerRef.current = null;
+    }
+
+    // Remove existing click listener
+    if (clickOutsideListenerRef.current) {
+      document.removeEventListener('mousedown', clickOutsideListenerRef.current, true);
+      clickOutsideListenerRef.current = null;
     }
 
     try {
-      // Create new autocomplete instance with custom styling
-      const autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
+      const input = inputRef.current;
+
+      // CRITICAL: Prevent browser autocomplete interference
+      input.setAttribute('autocomplete', 'new-password'); // Use 'new-password' as it's more aggressive
+      input.setAttribute('autocorrect', 'off');
+      input.setAttribute('autocapitalize', 'off');
+      input.setAttribute('spellcheck', 'false');
+
+      // Create new autocomplete instance
+      const autocomplete = new google.maps.places.Autocomplete(input, {
         ...options,
         fields: ['formatted_address', 'geometry', 'name', 'address_components'],
       });
 
-      // Add place_changed listener
-      const listener = autocomplete.addListener('place_changed', () => {
-        const place = autocomplete.getPlace();
+      console.log('✅ Autocomplete instance created');
 
-        console.log('Place selected:', place);
+      // Add place_changed listener
+      const listener = google.maps.event.addListener(autocomplete, 'place_changed', () => {
+        console.log('🎯 place_changed event fired');
+
+        const place = autocomplete.getPlace();
+        console.log('📍 Place data:', place);
 
         if (!place.geometry || !place.geometry.location) {
-          console.warn('No geometry for selected place');
+          console.warn('⚠️ Selected place has no geometry');
           return;
         }
 
+        // Call the callback
+        console.log('✅ Calling onPlaceSelected callback');
         onPlaceSelected(place);
       });
 
       autocompleteRef.current = autocomplete;
       listenerRef.current = listener;
+      isInitializedRef.current = true;
 
       console.log('✅ Autocomplete initialized successfully');
 
-      // Apply custom styling to the autocomplete dropdown
-      setTimeout(() => {
-        styleAutocompleteDropdown();
-      }, 100);
+      // CRITICAL: Use mousedown instead of click for better event capture
+      const handleClickOutside = (event: MouseEvent) => {
+        const target = event.target as HTMLElement;
+
+        // Find all Google autocomplete dropdowns
+        const pacContainers = document.querySelectorAll('.pac-container');
+
+        // Check if click is inside dropdown
+        let isInsideDropdown = false;
+        pacContainers.forEach((container) => {
+          if (container.contains(target)) {
+            isInsideDropdown = true;
+          }
+        });
+
+        // Check if click is inside input
+        const isInsideInput = input.contains(target);
+
+        // If click is outside both, hide the dropdown
+        if (!isInsideDropdown && !isInsideInput) {
+          console.log('🚪 Click outside detected, closing dropdown');
+
+          // Method 1: Blur the input
+          if (document.activeElement === input) {
+            input.blur();
+          }
+
+          // Method 2: Manually hide all pac-containers
+          pacContainers.forEach((container) => {
+            (container as HTMLElement).style.visibility = 'hidden';
+          });
+
+          // Method 3: Set gm-style-iw to hidden (Google's container)
+          const gmContainers = document.querySelectorAll('.gm-style');
+          gmContainers.forEach((container) => {
+            const pacContainer = container.querySelector('.pac-container');
+            if (pacContainer) {
+              (pacContainer as HTMLElement).style.visibility = 'hidden';
+            }
+          });
+        }
+      };
+
+      // CRITICAL: Add focus listener to show dropdown again
+      const handleFocus = () => {
+        console.log('👁️ Input focused, showing dropdown');
+
+        const pacContainers = document.querySelectorAll('.pac-container');
+        pacContainers.forEach((container) => {
+          (container as HTMLElement).style.visibility = 'visible';
+        });
+      };
+
+      // Add listeners
+      clickOutsideListenerRef.current = handleClickOutside;
+      document.addEventListener('mousedown', handleClickOutside, true);
+      input.addEventListener('focus', handleFocus);
+
+      console.log('✅ Click-outside listener added');
+
+      // CRITICAL: Prevent form submission on Enter in autocomplete
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Enter') {
+          // Check if pac-container is visible
+          const pacContainer = document.querySelector('.pac-container');
+          if (pacContainer && (pacContainer as HTMLElement).style.display !== 'none') {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        }
+      };
+
+      input.addEventListener('keydown', handleKeyDown, true);
+
     } catch (error) {
       console.error('❌ Error initializing autocomplete:', error);
+      isInitializedRef.current = false;
     }
 
-    // Cleanup function
+    // Cleanup function - CRITICAL: Only cleanup when truly unmounting
     return () => {
+      console.log('🧹 Cleanup function called');
+
+      // Don't cleanup if we're just in StrictMode double-render
+      // Only cleanup if the input element has changed or component is truly unmounting
+      const isInputChanged = inputElementRef.current !== inputRef.current;
+      const shouldCleanup = isInputChanged || !document.contains(inputRef.current || null);
+
+      if (!shouldCleanup) {
+        console.log('⏭️ Skipping cleanup (StrictMode or re-render)');
+        return;
+      }
+
+      console.log('🧹 Performing actual cleanup');
+
       if (listenerRef.current) {
         google.maps.event.removeListener(listenerRef.current);
+        listenerRef.current = null;
       }
-      if (inputRef.current) {
-        google.maps.event.clearInstanceListeners(inputRef.current);
+
+      if (inputElementRef.current) {
+        google.maps.event.clearInstanceListeners(inputElementRef.current);
       }
+
+      if (clickOutsideListenerRef.current) {
+        document.removeEventListener('mousedown', clickOutsideListenerRef.current, true);
+        clickOutsideListenerRef.current = null;
+      }
+
       autocompleteRef.current = null;
-      listenerRef.current = null;
+      isInitializedRef.current = false;
+      inputElementRef.current = null;
     };
-  }, [mapsLoaded, inputRef, onPlaceSelected]);
+  }, [mapsLoaded, inputRef, onPlaceSelected, options]);
 
   return autocompleteRef;
-}
-
-// Helper function to style the autocomplete dropdown
-function styleAutocompleteDropdown() {
-  // Find all pac-container elements (Google's autocomplete dropdown class)
-  const containers = document.querySelectorAll('.pac-container');
-
-  containers.forEach((container: Element) => {
-    const htmlContainer = container as HTMLElement;
-
-    // Apply custom styles
-    htmlContainer.style.borderRadius = '8px';
-    htmlContainer.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
-    htmlContainer.style.marginTop = '4px';
-    htmlContainer.style.border = '1px solid #e5e7eb';
-    htmlContainer.style.fontFamily = 'Inter, system-ui, -apple-system, sans-serif';
-
-    // Check for dark mode
-    const isDarkMode = document.documentElement.classList.contains('dark');
-
-    if (isDarkMode) {
-      htmlContainer.style.backgroundColor = '#1f2937';
-      htmlContainer.style.border = '1px solid #374151';
-    } else {
-      htmlContainer.style.backgroundColor = '#ffffff';
-    }
-
-    // Style individual items
-    const items = container.querySelectorAll('.pac-item');
-    items.forEach((item: Element) => {
-      const htmlItem = item as HTMLElement;
-      htmlItem.style.padding = '10px 14px';
-      htmlItem.style.cursor = 'pointer';
-      htmlItem.style.fontSize = '14px';
-      htmlItem.style.lineHeight = '1.5';
-
-      if (isDarkMode) {
-        htmlItem.style.color = '#f9fafb';
-        htmlItem.style.borderTop = '1px solid #374151';
-      } else {
-        htmlItem.style.color = '#111827';
-        htmlItem.style.borderTop = '1px solid #e5e7eb';
-      }
-
-      // Hover effect
-      htmlItem.addEventListener('mouseenter', () => {
-        if (isDarkMode) {
-          htmlItem.style.backgroundColor = '#374151';
-        } else {
-          htmlItem.style.backgroundColor = '#f3f4f6';
-        }
-      });
-
-      htmlItem.addEventListener('mouseleave', () => {
-        if (isDarkMode) {
-          htmlItem.style.backgroundColor = '#1f2937';
-        } else {
-          htmlItem.style.backgroundColor = '#ffffff';
-        }
-      });
-    });
-
-    // Style the query text (matched portion)
-    const queries = container.querySelectorAll('.pac-item-query');
-    queries.forEach((query: Element) => {
-      const htmlQuery = query as HTMLElement;
-      htmlQuery.style.fontWeight = '600';
-
-      if (isDarkMode) {
-        htmlQuery.style.color = '#60a5fa';
-      } else {
-        htmlQuery.style.color = '#2563eb';
-      }
-    });
-
-    // Style the secondary text
-    const secondaryTexts = container.querySelectorAll('.pac-item-query + span');
-    secondaryTexts.forEach((text: Element) => {
-      const htmlText = text as HTMLElement;
-
-      if (isDarkMode) {
-        htmlText.style.color = '#9ca3af';
-      } else {
-        htmlText.style.color = '#6b7280';
-      }
-    });
-  });
 }
 
 interface UseGoogleMapOptions {
   mapRef: React.RefObject<HTMLDivElement>;
   mapsLoaded: boolean;
-  center: { lat: number; lng: number };
+  center?: { lat: number; lng: number };
   zoom?: number;
-  onMapClick?: (lat: number, lng: number) => void;
+  onLocationSelected?: (location: { lat: number; lng: number; address?: string }) => void;
 }
 
 export function useGoogleMap({
   mapRef,
   mapsLoaded,
-  center,
-  zoom = 15,
-  onMapClick,
+  center = { lat: 40.7128, lng: -74.006 }, // Default: NYC
+  zoom = 12,
+  onLocationSelected,
 }: UseGoogleMapOptions) {
-  const mapInstance = useRef<google.maps.Map | null>(null);
-  const markerInstance = useRef<google.maps.Marker | null>(null);
-  const clickListenerRef = useRef<google.maps.MapsEventListener | null>(null);
+  const mapInstanceRef = useRef<google.maps.Map | null>(null);
+  const markerRef = useRef<google.maps.Marker | null>(null);
 
-  // Initialize map
   useEffect(() => {
-    if (!mapsLoaded || !mapRef.current || mapInstance.current) {
+    if (!mapsLoaded || !mapRef.current) {
       return;
     }
 
     try {
+      // Create map
       const map = new google.maps.Map(mapRef.current, {
         center,
         zoom,
         mapTypeControl: false,
         streetViewControl: false,
+        fullscreenControl: false,
       });
 
-      if (onMapClick) {
-        const listener = map.addListener('click', (e: google.maps.MapMouseEvent) => {
-          if (e.latLng) {
-            onMapClick(e.latLng.lat(), e.latLng.lng());
+      mapInstanceRef.current = map;
+      console.log('✅ Map initialized');
+
+      // Add click listener
+      if (onLocationSelected) {
+        map.addListener('click', async (event: google.maps.MapMouseEvent) => {
+          const latLng = event.latLng;
+          if (!latLng) return;
+
+          const lat = latLng.lat();
+          const lng = latLng.lng();
+
+          // Update or create marker
+          if (markerRef.current) {
+            markerRef.current.setPosition(latLng);
+          } else {
+            markerRef.current = new google.maps.Marker({
+              position: latLng,
+              map,
+              title: 'Selected Location',
+            });
+          }
+
+          // Reverse geocode to get address
+          try {
+            const geocoder = new google.maps.Geocoder();
+            const response = await geocoder.geocode({ location: latLng });
+
+            if (response.results[0]) {
+              const address = response.results[0].formatted_address;
+              onLocationSelected({ lat, lng, address });
+            } else {
+              onLocationSelected({ lat, lng });
+            }
+          } catch (error) {
+            console.error('Geocoding error:', error);
+            onLocationSelected({ lat, lng });
           }
         });
-        clickListenerRef.current = listener;
       }
-
-      mapInstance.current = map;
-      console.log('✅ Map initialized successfully');
     } catch (error) {
       console.error('❌ Error initializing map:', error);
     }
 
     return () => {
-      if (clickListenerRef.current) {
-        google.maps.event.removeListener(clickListenerRef.current);
+      if (markerRef.current) {
+        markerRef.current.setMap(null);
+        markerRef.current = null;
       }
-      if (mapInstance.current) {
-        google.maps.event.clearInstanceListeners(mapInstance.current);
-      }
-      mapInstance.current = null;
+      mapInstanceRef.current = null;
     };
-  }, [mapsLoaded, mapRef, center, zoom, onMapClick]);
+  }, [mapsLoaded, mapRef, center, zoom, onLocationSelected]);
 
-  // Update marker position
-  const updateMarker = useCallback((lat: number, lng: number) => {
-    if (!mapInstance.current) return;
-
-    // Remove existing marker
-    if (markerInstance.current) {
-      markerInstance.current.setMap(null);
-    }
-
-    // Create new marker
-    try {
-      markerInstance.current = new google.maps.Marker({
-        position: { lat, lng },
-        map: mapInstance.current,
-        title: 'Your Business Location',
-        animation: google.maps.Animation.DROP,
-      });
-
-      // Center map on new marker
-      mapInstance.current.setCenter({ lat, lng });
-    } catch (error) {
-      console.error('❌ Error creating marker:', error);
-    }
-  }, []);
-
-  // Recenter map
-  const recenterMap = useCallback((lat: number, lng: number) => {
-    if (mapInstance.current) {
-      mapInstance.current.setCenter({ lat, lng });
-    }
-  }, []);
-
-  return {
-    mapInstance: mapInstance.current,
-    updateMarker,
-    recenterMap,
-  };
+  return mapInstanceRef;
 }
