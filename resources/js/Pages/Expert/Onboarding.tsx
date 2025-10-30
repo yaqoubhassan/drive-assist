@@ -171,7 +171,7 @@ export default function Onboarding({
           {/* Google Maps Error */}
           {error && (
             <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
-              <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
+              <p className="text-sm text-red-800 dark:text-red-200">{error.message}</p>
             </div>
           )}
 

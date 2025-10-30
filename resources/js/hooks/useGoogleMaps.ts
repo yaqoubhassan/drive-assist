@@ -115,7 +115,7 @@ export function useGoogleAutocomplete({
       });
 
       // Add place_changed listener
-      const listener = google.maps.event.addListener(autocomplete, 'place_changed', () => {
+      const listener = autocomplete.addListener('place_changed', () => {
         const place = autocomplete.getPlace();
 
         console.log('Place selected:', place);
