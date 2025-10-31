@@ -230,7 +230,7 @@ export default function DatePicker({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute z-50 mt-1 w-full min-w-[180px] bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden"
+            className="absolute z-50 mt-1 w-full min-w-[280px]  bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden"
           >
             <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between mb-1.5">
@@ -282,19 +282,19 @@ export default function DatePicker({
               </div>
             </div>
 
-            <div className="p-3">
-              <div className="grid grid-cols-7 gap-[1px] mb-1">
+            <div className="p-2">
+              <div className="grid grid-cols-7 gap-1 mb-1">
                 {DAYS.map(day => (
                   <div
                     key={day}
-                    className="text-center text-xs font-medium text-gray-500 dark:text-gray-400 py-0.5"
+                    className="text-center text-xs font-medium text-gray-500 dark:text-gray-400 h-6 flex items-center justify-center"
                   >
                     {day}
                   </div>
                 ))}
               </div>
 
-              <div className="grid grid-cols-7 gap-0.5">
+              <div className="grid grid-cols-7 gap-1">
                 {calendarDays.map((day, index) => (
                   <button
                     key={index}
@@ -302,7 +302,7 @@ export default function DatePicker({
                     onClick={() => day && handleDateSelect(day)}
                     disabled={!day || (day !== null && isDateDisabled(day))}
                     className={`
-                      aspect-square flex items-center justify-center rounded-md text-xs font-medium
+                      h-8 w-8 flex items-center justify-center rounded-md text-sm font-medium
                       transition-all duration-150
                       ${!day ? 'invisible' : ''}
                       ${(day !== null && isDateDisabled(day))
@@ -324,7 +324,7 @@ export default function DatePicker({
                 ))}
               </div>
 
-              <div className="mt-1 pt-1 border-t border-gray-200 dark:border-gray-700">
+              <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
                 <button
                   type="button"
                   onClick={() => {
@@ -333,7 +333,7 @@ export default function DatePicker({
                     onChange(todayString);
                     setIsOpen(false);
                   }}
-                  className="w-full px-1 py-0.5 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                  className="w-full px-2 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
                 >
                   Today
                 </button>
