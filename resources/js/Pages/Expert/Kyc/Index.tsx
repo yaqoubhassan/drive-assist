@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Head, router } from '@inertiajs/react';
-import ExpertLayout from '@/Layouts/ExpertLayout';
+import ExpertLayout from '@/Layouts/Expertdashboardlayout';
 import { motion, AnimatePresence } from 'framer-motion';
 import KycStep1BusinessDocuments from '@/Components/expert/kyc/KycStep1BusinessDocuments';
 import KycStep2Identity from '@/Components/expert/kyc/KycStep2Identity';
-import KycStep3Insurance from '@/Components/expert/kyc/KycStep3Insurance';
+import KycStep3Insurance from '@/Components/expert/kyc/Kycstep3Insurance';
 import KycStep4Banking from '@/Components/expert/kyc/KycStep4Banking';
 import KycStep5BackgroundCheck from '@/Components/expert/kyc/KycStep5BackgroundCheck';
-import KycStep6Review from '@/Components/expert/kyc/KycStep6Review';
+import KycStep6Review from '@/Components/expert/kyc/Kycstep6Review';
 import KycStatusBanner from '@/Components/expert/kyc/KycStatusBanner';
 import {
   CheckCircleIcon,

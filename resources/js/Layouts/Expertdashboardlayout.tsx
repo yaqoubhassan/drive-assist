@@ -34,7 +34,7 @@ interface PageProps extends InertiaPageProps {
       id: number;
       name: string;
       email: string;
-      user_type: string;
+      user_type: "driver" | "expert" | "admin";
     };
   };
   unreadNotifications?: number;
@@ -51,8 +51,8 @@ export default function ExpertDashboardLayout({ children, title }: ExpertDashboa
     { name: 'Jobs', href: route('expert.jobs.index'), icon: BriefcaseIcon },
     { name: 'Schedule', href: '#', icon: CalendarIcon },
     { name: 'Reviews', href: route('expert.reviews.index'), icon: StarIcon },
-    { name: 'Analytics', href: route('expert.analytics'), icon: ChartBarIcon },
-    { name: 'Earnings', href: route('expert.earnings'), icon: CurrencyDollarIcon },
+    { name: 'Analytics', href: "#", icon: ChartBarIcon },
+    { name: 'Earnings', href: "#", icon: CurrencyDollarIcon },
     { name: 'Messages', href: "#", icon: ChatBubbleLeftRightIcon },
     { name: 'Documents', href: "#", icon: DocumentTextIcon },
     { name: 'Settings', href: "#", icon: Cog6ToothIcon },

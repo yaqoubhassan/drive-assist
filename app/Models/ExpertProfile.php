@@ -75,6 +75,50 @@ class ExpertProfile extends Model
     ];
 
     /**
+     * Check if the expert is currently open based on operating hours
+     */
+    public function isOpen(): bool
+    {
+        $now = now();
+        $dayOfWeek = strtolower($now->format('l')); // monday, tuesday, etc.
+        $currentTime = $now->format('H:i:s');
+
+        $openField = "{$dayOfWeek}_open";
+        $closeField = "{$dayOfWeek}_close";
+
+        // If no hours set for today, consider closed
+        if (empty($this->{$openField}) || empty($this->{$closeField})) {
+            return false;
+        }
+
+        // Check if current time is within operating hours
+        return $currentTime >= $this->{$openField} && $currentTime <= $this->{$closeField};
+    }
+
+    /**
+     * Get the pricing tier based on hourly rates
+     */
+    public function getPricingTier(): string
+    {
+        // If no rates set, default to moderate
+        if (empty($this->hourly_rate_min) && empty($this->hourly_rate_max)) {
+            return 'moderate';
+        }
+
+        // Calculate average rate
+        $avgRate = ($this->hourly_rate_min + $this->hourly_rate_max) / 2;
+
+        // Pricing tiers based on average hourly rate
+        if ($avgRate < 75) {
+            return 'budget';
+        } elseif ($avgRate < 125) {
+            return 'moderate';
+        } else {
+            return 'premium';
+        }
+    }
+
+    /**
      * Get the user that owns the expert profile
      */
     public function user(): BelongsTo

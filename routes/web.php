@@ -27,8 +27,10 @@ use App\Http\Controllers\MaintenanceScheduleController;
 use App\Http\Controllers\RoadSignController;
 use App\Http\Controllers\SeasonalChecklistController;
 use App\Http\Controllers\WarningLightController;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -58,7 +60,11 @@ use Inertia\Inertia;
 
 // Homepage
 Route::get('/', function () {
-    return Inertia::render('Welcome');
+    return Inertia::render('Welcome', [
+        'auth' => [
+            'user' => Auth::user(),
+        ],
+    ]);
 })->name('home');
 
 // Main Pages
