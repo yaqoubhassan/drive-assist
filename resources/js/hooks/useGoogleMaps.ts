@@ -1,3 +1,6 @@
+// ✅ FIXED VERSION - Doesn't interfere with button clicks
+// Key Fix: Added check to ignore clicks on buttons and interactive elements
+
 import { useState, useEffect, useRef } from 'react';
 
 interface UseGoogleMapsOptions {
@@ -21,7 +24,6 @@ export function useGoogleMaps({
   const scriptLoadedRef = useRef(false);
 
   useEffect(() => {
-    // Check if already loaded
     if (
       window.google &&
       window.google.maps &&
@@ -34,7 +36,6 @@ export function useGoogleMaps({
       return;
     }
 
-    // Prevent duplicate loading
     if (scriptLoadedRef.current || document.querySelector('script[src*="maps.googleapis.com"]')) {
       console.log('⏳ Google Maps script already loading...');
       return;
@@ -62,7 +63,6 @@ export function useGoogleMaps({
     script.async = true;
     script.defer = true;
 
-    // Global callback
     (window as any).__googleMapsCallback = () => {
       console.log('✅ Google Maps loaded successfully');
       setMapsLoaded(true);
@@ -81,8 +81,6 @@ export function useGoogleMaps({
     document.head.appendChild(script);
 
     return () => {
-      // Cleanup is tricky with Google Maps, so we keep the script
-      // but reset our loading state if component unmounts early
       if (isLoading) {
         setIsLoading(false);
       }
@@ -111,44 +109,34 @@ export function useGoogleAutocomplete({
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const listenerRef = useRef<google.maps.MapsEventListener | null>(null);
   const clickOutsideListenerRef = useRef<((event: MouseEvent) => void) | null>(null);
-  const isInitializedRef = useRef(false); // Track if already initialized
-  const inputElementRef = useRef<HTMLInputElement | null>(null); // Store input element
+  const isInitializedRef = useRef(false);
+  const inputElementRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    // Wait for maps to load and input to be available
     if (!mapsLoaded || !inputRef.current) {
       return;
     }
 
-    // CRITICAL: Prevent double initialization in StrictMode
-    // Only initialize once per input element
     if (isInitializedRef.current && inputElementRef.current === inputRef.current) {
       console.log('⚠️ Autocomplete already initialized for this input, skipping');
       return;
     }
 
     console.log('🔧 Initializing autocomplete...');
-
-    // Store the input element reference
     inputElementRef.current = inputRef.current;
 
-    // Cleanup existing instance if any
     if (autocompleteRef.current) {
       console.log('🧹 Cleaning up existing autocomplete instance');
-
       if (listenerRef.current) {
         google.maps.event.removeListener(listenerRef.current);
         listenerRef.current = null;
       }
-
       if (inputRef.current) {
         google.maps.event.clearInstanceListeners(inputRef.current);
       }
-
       autocompleteRef.current = null;
     }
 
-    // Remove existing click listener
     if (clickOutsideListenerRef.current) {
       document.removeEventListener('mousedown', clickOutsideListenerRef.current, true);
       clickOutsideListenerRef.current = null;
@@ -157,13 +145,11 @@ export function useGoogleAutocomplete({
     try {
       const input = inputRef.current;
 
-      // CRITICAL: Prevent browser autocomplete interference
-      input.setAttribute('autocomplete', 'new-password'); // Use 'new-password' as it's more aggressive
+      input.setAttribute('autocomplete', 'new-password');
       input.setAttribute('autocorrect', 'off');
       input.setAttribute('autocapitalize', 'off');
       input.setAttribute('spellcheck', 'false');
 
-      // Create new autocomplete instance
       const autocomplete = new google.maps.places.Autocomplete(input, {
         ...options,
         fields: ['formatted_address', 'geometry', 'name', 'address_components'],
@@ -171,10 +157,8 @@ export function useGoogleAutocomplete({
 
       console.log('✅ Autocomplete instance created');
 
-      // Add place_changed listener
       const listener = google.maps.event.addListener(autocomplete, 'place_changed', () => {
         console.log('🎯 place_changed event fired');
-
         const place = autocomplete.getPlace();
         console.log('📍 Place data:', place);
 
@@ -183,7 +167,6 @@ export function useGoogleAutocomplete({
           return;
         }
 
-        // Call the callback
         console.log('✅ Calling onPlaceSelected callback');
         onPlaceSelected(place);
       });
@@ -194,14 +177,24 @@ export function useGoogleAutocomplete({
 
       console.log('✅ Autocomplete initialized successfully');
 
-      // CRITICAL: Use mousedown instead of click for better event capture
+      // ✅ CRITICAL FIX: Improved click-outside handler
       const handleClickOutside = (event: MouseEvent) => {
         const target = event.target as HTMLElement;
 
-        // Find all Google autocomplete dropdowns
+        // ✅ FIX: Check if click is on any button or interactive element
+        const isButton = target.closest('button');
+        const isLink = target.closest('a');
+        const isFormControl = target.closest('input:not([type="text"]), select, textarea');
+        const isLabel = target.closest('label');
+        const isInteractiveElement = isButton || isLink || isFormControl || isLabel;
+
+        if (isInteractiveElement) {
+          console.log('🎯 Click on interactive element, ignoring (allowing normal behavior)');
+          return; // ✅ Exit early, don't interfere with button clicks
+        }
+
         const pacContainers = document.querySelectorAll('.pac-container');
 
-        // Check if click is inside dropdown
         let isInsideDropdown = false;
         pacContainers.forEach((container) => {
           if (container.contains(target)) {
@@ -209,24 +202,19 @@ export function useGoogleAutocomplete({
           }
         });
 
-        // Check if click is inside input
         const isInsideInput = input.contains(target);
 
-        // If click is outside both, hide the dropdown
         if (!isInsideDropdown && !isInsideInput) {
           console.log('🚪 Click outside detected, closing dropdown');
 
-          // Method 1: Blur the input
           if (document.activeElement === input) {
             input.blur();
           }
 
-          // Method 2: Manually hide all pac-containers
           pacContainers.forEach((container) => {
             (container as HTMLElement).style.visibility = 'hidden';
           });
 
-          // Method 3: Set gm-style-iw to hidden (Google's container)
           const gmContainers = document.querySelectorAll('.gm-style');
           gmContainers.forEach((container) => {
             const pacContainer = container.querySelector('.pac-container');
@@ -237,27 +225,22 @@ export function useGoogleAutocomplete({
         }
       };
 
-      // CRITICAL: Add focus listener to show dropdown again
       const handleFocus = () => {
         console.log('👁️ Input focused, showing dropdown');
-
         const pacContainers = document.querySelectorAll('.pac-container');
         pacContainers.forEach((container) => {
           (container as HTMLElement).style.visibility = 'visible';
         });
       };
 
-      // Add listeners
       clickOutsideListenerRef.current = handleClickOutside;
       document.addEventListener('mousedown', handleClickOutside, true);
       input.addEventListener('focus', handleFocus);
 
-      console.log('✅ Click-outside listener added');
+      console.log('✅ Click-outside listener added (with button exemption)');
 
-      // CRITICAL: Prevent form submission on Enter in autocomplete
       const handleKeyDown = (e: KeyboardEvent) => {
         if (e.key === 'Enter') {
-          // Check if pac-container is visible
           const pacContainer = document.querySelector('.pac-container');
           if (pacContainer && (pacContainer as HTMLElement).style.display !== 'none') {
             e.preventDefault();
@@ -273,12 +256,9 @@ export function useGoogleAutocomplete({
       isInitializedRef.current = false;
     }
 
-    // Cleanup function - CRITICAL: Only cleanup when truly unmounting
     return () => {
       console.log('🧹 Cleanup function called');
 
-      // Don't cleanup if we're just in StrictMode double-render
-      // Only cleanup if the input element has changed or component is truly unmounting
       const isInputChanged = inputElementRef.current !== inputRef.current;
       const shouldCleanup = isInputChanged || !document.contains(inputRef.current || null);
 
@@ -323,7 +303,7 @@ interface UseGoogleMapOptions {
 export function useGoogleMap({
   mapRef,
   mapsLoaded,
-  center = { lat: 40.7128, lng: -74.006 }, // Default: NYC
+  center = { lat: 40.7128, lng: -74.006 },
   zoom = 12,
   onLocationSelected,
 }: UseGoogleMapOptions) {
@@ -336,7 +316,6 @@ export function useGoogleMap({
     }
 
     try {
-      // Create map
       const map = new google.maps.Map(mapRef.current, {
         center,
         zoom,
@@ -348,7 +327,6 @@ export function useGoogleMap({
       mapInstanceRef.current = map;
       console.log('✅ Map initialized');
 
-      // Add click listener
       if (onLocationSelected) {
         map.addListener('click', async (event: google.maps.MapMouseEvent) => {
           const latLng = event.latLng;
@@ -357,7 +335,6 @@ export function useGoogleMap({
           const lat = latLng.lat();
           const lng = latLng.lng();
 
-          // Update or create marker
           if (markerRef.current) {
             markerRef.current.setPosition(latLng);
           } else {
@@ -368,7 +345,6 @@ export function useGoogleMap({
             });
           }
 
-          // Reverse geocode to get address
           try {
             const geocoder = new google.maps.Geocoder();
             const response = await geocoder.geocode({ location: latLng });
