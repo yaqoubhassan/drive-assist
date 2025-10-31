@@ -10,7 +10,7 @@ interface Props {
   saveProgress: () => void;
 }
 
-export default function KycStep5BackgroundCheck({ data, updateData, nextStep, previousStep, saveProgress }: Props) {
+export default function KycStep4BackgroundCheck({ data, updateData, nextStep, previousStep, saveProgress }: Props) {
   const [formData, setFormData] = useState({
     background_check_consent: data.background_check_consent || false,
     criminal_record_disclosure: data.criminal_record_disclosure || 'none',

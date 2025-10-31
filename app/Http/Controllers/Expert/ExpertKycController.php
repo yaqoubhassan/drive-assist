@@ -76,11 +76,6 @@ class ExpertKycController extends Controller
             'background_check_consent' => 'nullable|boolean',
             'criminal_record_disclosure' => 'nullable|in:none,disclosed',
             'criminal_record_details' => 'nullable|string|max:1000',
-            'bank_name' => 'nullable|string|max:255',
-            'account_holder_name' => 'nullable|string|max:255',
-            'account_number' => 'nullable|string|max:50',
-            'routing_number' => 'nullable|string|max:20',
-            'tax_id' => 'nullable|string|max:20',
             'certifications' => 'nullable|array',
             'professional_references' => 'nullable|array',
         ]);
@@ -89,22 +84,11 @@ class ExpertKycController extends Controller
         try {
             // Update basic fields
             $updateData = collect($validated)->except([
-                'account_number',
-                'tax_id',
                 'certifications',
                 'professional_references',
             ])->filter()->toArray();
 
             $kyc->update($updateData);
-
-            // Handle encrypted fields
-            if ($request->filled('account_number')) {
-                $kyc->setAccountNumber($request->account_number);
-            }
-
-            if ($request->filled('tax_id')) {
-                $kyc->setTaxId($request->tax_id);
-            }
 
             // Handle JSON fields
             if ($request->has('certifications')) {
@@ -393,26 +377,6 @@ class ExpertKycController extends Controller
             $errors[] = 'Background check consent is required';
         }
 
-        if (empty($kyc->bank_name)) {
-            $errors[] = 'Bank name is required';
-        }
-
-        if (empty($kyc->account_holder_name)) {
-            $errors[] = 'Account holder name is required';
-        }
-
-        if (empty($kyc->account_number_encrypted)) {
-            $errors[] = 'Account number is required';
-        }
-
-        if (empty($kyc->routing_number)) {
-            $errors[] = 'Routing number is required';
-        }
-
-        if (empty($kyc->tax_id_encrypted)) {
-            $errors[] = 'Tax ID is required';
-        }
-
         return $errors;
     }
 
@@ -450,10 +414,6 @@ class ExpertKycController extends Controller
             'background_check_status' => $kyc->background_check_status,
             'criminal_record_disclosure' => $kyc->criminal_record_disclosure,
             'criminal_record_details' => $kyc->criminal_record_details,
-            'bank_name' => $kyc->bank_name,
-            'account_holder_name' => $kyc->account_holder_name,
-            'account_number_masked' => $kyc->getMaskedAccountNumber(),
-            'routing_number' => $kyc->routing_number,
             'utility_bill_path' => $kyc->utility_bill_path,
             'utility_bill_url' => $kyc->utility_bill_path
                 ? Storage::disk('public')->url($kyc->utility_bill_path)

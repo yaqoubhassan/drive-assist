@@ -5,17 +5,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import KycStep1BusinessDocuments from '@/Components/expert/kyc/KycStep1BusinessDocuments';
 import KycStep2Identity from '@/Components/expert/kyc/KycStep2Identity';
 import KycStep3Insurance from '@/Components/expert/kyc/Kycstep3Insurance';
-import KycStep4Banking from '@/Components/expert/kyc/KycStep4Banking';
-import KycStep5BackgroundCheck from '@/Components/expert/kyc/KycStep5BackgroundCheck';
-import KycStep6Review from '@/Components/expert/kyc/Kycstep6Review';
+import KycStep4BackgroundCheck from '@/Components/expert/kyc/KycStep4BackgroundCheck';
+import KycStep5Review from '@/Components/expert/kyc/KycStep5Review';
 import KycStatusBanner from '@/Components/expert/kyc/KycStatusBanner';
 import {
   CheckCircleIcon,
   DocumentTextIcon,
   IdentificationIcon,
   ShieldCheckIcon,
-  BanknotesIcon,
   ClipboardDocumentCheckIcon,
+  CheckIcon,
 } from '@heroicons/react/24/outline';
 
 interface KycData {
@@ -34,10 +33,6 @@ interface KycData {
   background_check_consent: boolean;
   criminal_record_disclosure: string | null;
   criminal_record_details: string | null;
-  bank_name: string | null;
-  account_holder_name: string | null;
-  account_number_masked: string | null;
-  routing_number: string | null;
   utility_bill_url: string | null;
   certifications: any[];
   professional_references: any[];
@@ -63,12 +58,11 @@ interface Props {
 }
 
 const steps = [
-  { number: 1, name: 'Business Documents', icon: DocumentTextIcon },
-  { number: 2, name: 'Identity Verification', icon: IdentificationIcon },
-  { number: 3, name: 'Insurance', icon: ShieldCheckIcon },
-  { number: 4, name: 'Banking', icon: BanknotesIcon },
-  { number: 5, name: 'Background Check', icon: ClipboardDocumentCheckIcon },
-  { number: 6, name: 'Review & Submit', icon: CheckCircleIcon },
+  { number: 1, name: 'Business Documents', shortName: 'Business', icon: DocumentTextIcon },
+  { number: 2, name: 'Identity Verification', shortName: 'Identity', icon: IdentificationIcon },
+  { number: 3, name: 'Insurance', shortName: 'Insurance', icon: ShieldCheckIcon },
+  { number: 4, name: 'Background Check', shortName: 'Background', icon: ClipboardDocumentCheckIcon },
+  { number: 5, name: 'Review & Submit', shortName: 'Review', icon: CheckCircleIcon },
 ];
 
 export default function Index({ kyc, expertProfile }: Props) {
@@ -92,7 +86,7 @@ export default function Index({ kyc, expertProfile }: Props) {
   };
 
   const nextStep = () => {
-    if (currentStep < 6) {
+    if (currentStep < 5) {
       setCurrentStep(currentStep + 1);
       saveProgress(currentStep + 1);
     }
@@ -149,13 +143,11 @@ export default function Index({ kyc, expertProfile }: Props) {
       case 3:
         return <KycStep3Insurance {...stepProps} />;
       case 4:
-        return <KycStep4Banking {...stepProps} />;
+        return <KycStep4BackgroundCheck {...stepProps} />;
       case 5:
-        return <KycStep5BackgroundCheck {...stepProps} />;
-      case 6:
-        return <KycStep6Review {...stepProps} kycData={kycData} />;
+        return <KycStep5Review {...stepProps} />;
       default:
-        return null;
+        return <KycStep1BusinessDocuments {...stepProps} />;
     }
   };
 
@@ -163,118 +155,278 @@ export default function Index({ kyc, expertProfile }: Props) {
     <ExpertLayout>
       <Head title="KYC Verification" />
 
-      <div className="py-8">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           {/* Status Banner */}
           <KycStatusBanner kyc={kycData} />
 
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-              KYC Verification
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              Complete your verification to unlock all features and start receiving leads
-            </p>
-          </div>
+          {/* Header Section */}
+          <div className="mb-6 sm:mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-1">
+                  KYC Verification
+                </h1>
+                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+                  Complete your verification to start accepting jobs
+                </p>
+              </div>
 
-          {/* Progress Bar */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Overall Progress
-              </span>
-              <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                {kycData.completion_percentage}% Complete
-              </span>
-            </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
-              <motion.div
-                className="bg-blue-600 dark:bg-blue-500 h-3 rounded-full"
-                initial={{ width: 0 }}
-                animate={{ width: `${kycData.completion_percentage}%` }}
-                transition={{ duration: 0.5 }}
-              />
-            </div>
-          </div>
-
-          {/* Step Indicator */}
-          <nav className="mb-8">
-            <ol className="flex items-center justify-between">
-              {steps.map((step, index) => {
-                const isCompleted = currentStep > step.number;
-                const isCurrent = currentStep === step.number;
-                const Icon = step.icon;
-
-                return (
-                  <li key={step.number} className="relative flex-1">
-                    {/* Connector Line */}
-                    {index !== steps.length - 1 && (
-                      <div
-                        className={`absolute top-5 left-1/2 w-full h-0.5 ${isCompleted
-                          ? 'bg-blue-600 dark:bg-blue-500'
-                          : 'bg-gray-300 dark:bg-gray-600'
-                          }`}
+              {/* Progress Badge - Desktop */}
+              <div className="hidden sm:flex items-center gap-2 bg-white dark:bg-gray-800 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center gap-2">
+                  <div className="relative w-12 h-12">
+                    <svg className="transform -rotate-90 w-12 h-12">
+                      <circle
+                        cx="24"
+                        cy="24"
+                        r="20"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        fill="transparent"
+                        className="text-gray-200 dark:text-gray-700"
                       />
-                    )}
-
-                    {/* Step Button */}
-                    <button
-                      onClick={() => goToStep(step.number)}
-                      disabled={step.number > currentStep + 1}
-                      className="relative flex flex-col items-center group"
-                    >
-                      <div
-                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isCompleted
-                          ? 'bg-blue-600 dark:bg-blue-500'
-                          : isCurrent
-                            ? 'bg-blue-600 dark:bg-blue-500 ring-4 ring-blue-100 dark:ring-blue-900'
-                            : 'bg-gray-300 dark:bg-gray-600'
-                          }`}
-                      >
-                        {isCompleted ? (
-                          <CheckCircleIcon className="w-6 h-6 text-white" />
-                        ) : (
-                          <Icon className="w-5 h-5 text-white" />
-                        )}
-                      </div>
-                      <span
-                        className={`mt-2 text-xs font-medium text-center hidden sm:block ${isCurrent
-                          ? 'text-blue-600 dark:text-blue-400'
-                          : 'text-gray-500 dark:text-gray-400'
-                          }`}
-                      >
-                        {step.name}
+                      <circle
+                        cx="24"
+                        cy="24"
+                        r="20"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        fill="transparent"
+                        strokeDasharray={`${2 * Math.PI * 20}`}
+                        strokeDashoffset={`${2 * Math.PI * 20 * (1 - kycData.completion_percentage / 100)}`}
+                        className="text-blue-600 dark:text-blue-500 transition-all duration-500"
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-xs font-bold text-gray-900 dark:text-white">
+                        {kycData.completion_percentage}%
                       </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ol>
-          </nav>
+                    </div>
+                  </div>
+                  <div className="text-left">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Progress</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                      Step {currentStep} of 5
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
-          {/* Step Content */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 sm:p-8">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={currentStep}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
-              >
-                {renderStep()}
-              </motion.div>
-            </AnimatePresence>
+          {/* Mobile Progress Bar */}
+          <div className="sm:hidden mb-6">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Step {currentStep} of 5
+                </span>
+                <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                  {kycData.completion_percentage}%
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                <motion.div
+                  className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${kycData.completion_percentage}%` }}
+                  transition={{ duration: 0.5, ease: "easeOut" }}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Desktop Sidebar Navigation */}
+            <div className="hidden lg:block lg:col-span-3">
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 sticky top-6">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4 px-2">
+                  Verification Steps
+                </h3>
+                <nav className="space-y-1">
+                  {steps.map((step) => {
+                    const Icon = step.icon;
+                    const isCompleted = currentStep > step.number;
+                    const isCurrent = currentStep === step.number;
+                    const isAccessible = step.number <= currentStep;
+
+                    return (
+                      <button
+                        key={step.number}
+                        onClick={() => isAccessible && goToStep(step.number)}
+                        disabled={!isAccessible}
+                        className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-all ${isCurrent
+                          ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800'
+                          : isCompleted
+                            ? 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                            : 'opacity-50 cursor-not-allowed'
+                          }`}
+                      >
+                        <div
+                          className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-all ${isCompleted
+                            ? 'bg-green-100 dark:bg-green-900/30'
+                            : isCurrent
+                              ? 'bg-blue-100 dark:bg-blue-900/30'
+                              : 'bg-gray-100 dark:bg-gray-700'
+                            }`}
+                        >
+                          {isCompleted ? (
+                            <CheckIcon className="w-5 h-5 text-green-600 dark:text-green-400 font-bold" strokeWidth={3} />
+                          ) : (
+                            <Icon
+                              className={`w-5 h-5 ${isCurrent
+                                ? 'text-blue-600 dark:text-blue-400'
+                                : 'text-gray-400 dark:text-gray-500'
+                                }`}
+                            />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p
+                            className={`text-sm font-medium truncate ${isCurrent
+                              ? 'text-blue-900 dark:text-blue-100'
+                              : isCompleted
+                                ? 'text-gray-900 dark:text-white'
+                                : 'text-gray-500 dark:text-gray-400'
+                              }`}
+                          >
+                            {step.name}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                            {isCompleted ? 'Completed' : isCurrent ? 'In progress' : 'Pending'}
+                          </p>
+                        </div>
+                        {isCurrent && (
+                          <div className="flex-shrink-0 w-1.5 h-8 bg-blue-600 dark:bg-blue-500 rounded-full" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </nav>
+              </div>
+            </div>
+
+            {/* Mobile Stepper */}
+            <div className="lg:hidden mb-4">
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between">
+                  {steps.map((step, index) => {
+                    const isCompleted = currentStep > step.number;
+                    const isCurrent = currentStep === step.number;
+                    const isAccessible = step.number <= currentStep;
+
+                    return (
+                      <React.Fragment key={step.number}>
+                        <button
+                          onClick={() => isAccessible && goToStep(step.number)}
+                          disabled={!isAccessible}
+                          className="flex flex-col items-center gap-2 group"
+                        >
+                          <div
+                            className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all ${isCompleted
+                              ? 'bg-green-500 dark:bg-green-600'
+                              : isCurrent
+                                ? 'bg-blue-600 dark:bg-blue-500 ring-4 ring-blue-100 dark:ring-blue-900/50'
+                                : 'bg-gray-200 dark:bg-gray-700'
+                              } ${isAccessible ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}
+                          >
+                            {isCompleted ? (
+                              <CheckIcon className="w-5 h-5 sm:w-6 sm:h-6 text-white" strokeWidth={3} />
+                            ) : (
+                              <span
+                                className={`text-sm sm:text-base font-bold ${isCurrent ? 'text-white' : 'text-gray-400 dark:text-gray-500'
+                                  }`}
+                              >
+                                {step.number}
+                              </span>
+                            )}
+                          </div>
+                          <span
+                            className={`text-xs font-medium text-center max-w-[60px] sm:max-w-[80px] leading-tight ${isCurrent
+                              ? 'text-blue-600 dark:text-blue-400'
+                              : isCompleted
+                                ? 'text-green-600 dark:text-green-400'
+                                : 'text-gray-500 dark:text-gray-400'
+                              }`}
+                          >
+                            {step.shortName}
+                          </span>
+                        </button>
+
+                        {/* Connector Line */}
+                        {index < steps.length - 1 && (
+                          <div className="flex-1 h-0.5 mx-1 sm:mx-2 bg-gray-200 dark:bg-gray-700 relative overflow-hidden">
+                            <motion.div
+                              className="h-full bg-gradient-to-r from-blue-500 to-blue-600"
+                              initial={{ width: '0%' }}
+                              animate={{
+                                width: currentStep > step.number ? '100%' : '0%',
+                              }}
+                              transition={{ duration: 0.4, ease: "easeInOut" }}
+                            />
+                          </div>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Main Content Area */}
+            <div className="lg:col-span-9">
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={currentStep}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    className="p-6 sm:p-8"
+                  >
+                    {renderStep()}
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+            </div>
           </div>
 
           {/* Auto-save Indicator */}
-          {isSaving && (
-            <div className="fixed bottom-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg flex items-center space-x-2">
-              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
-              <span className="text-sm">Saving...</span>
-            </div>
-          )}
+          <AnimatePresence>
+            {isSaving && (
+              <motion.div
+                initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 20, scale: 0.9 }}
+                transition={{ type: "spring", damping: 20, stiffness: 300 }}
+                className="fixed bottom-6 right-6 bg-blue-600 dark:bg-blue-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 z-50"
+              >
+                <svg
+                  className="animate-spin h-5 w-5 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+                <span className="font-medium">Saving progress...</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </ExpertLayout>

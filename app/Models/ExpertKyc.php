@@ -5,40 +5,47 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Facades\Crypt;
 
 class ExpertKyc extends Model
 {
     use HasFactory;
 
+    /**
+     * The table associated with the model.
+     */
     protected $table = 'expert_kyc';
 
+    /**
+     * The attributes that are mass assignable.
+     */
     protected $fillable = [
         'expert_profile_id',
+        // Business Documents
         'business_license_number',
         'business_license_document_path',
         'business_license_expiry',
+        // Insurance
         'insurance_policy_number',
         'insurance_certificate_path',
         'insurance_expiry',
         'insurance_provider',
+        // Identity
         'id_type',
         'id_number',
         'id_document_front_path',
         'id_document_back_path',
+        // Background Check
         'background_check_consent',
         'background_check_status',
         'background_check_completed_at',
         'criminal_record_disclosure',
         'criminal_record_details',
-        'bank_name',
-        'account_holder_name',
-        'account_number_encrypted',
-        'routing_number',
-        'tax_id_encrypted',
+        // Address Verification
         'utility_bill_path',
+        // Professional
         'certifications',
         'professional_references',
+        // KYC Status
         'kyc_status',
         'kyc_submitted_at',
         'kyc_reviewed_at',
@@ -50,6 +57,9 @@ class ExpertKyc extends Model
         'current_step',
     ];
 
+    /**
+     * The attributes that should be cast.
+     */
     protected $casts = [
         'business_license_expiry' => 'date',
         'insurance_expiry' => 'date',
@@ -66,7 +76,7 @@ class ExpertKyc extends Model
     ];
 
     /**
-     * Get the expert profile that owns the KYC record
+     * Get the expert profile that owns this KYC record
      */
     public function expertProfile(): BelongsTo
     {
@@ -123,6 +133,16 @@ class ExpertKyc extends Model
             && $this->id_document_front_path !== null;
     }
 
+    /**
+     * Calculate and update completion percentage
+     * Updated to reflect 4 steps (removed banking - Step 4)
+     * 
+     * Step 1: Business Documents (30%)
+     * Step 2: Identity Verification (25%)
+     * Step 3: Insurance (20%)
+     * Step 4: Background Check (25%)
+     * Step 5: Review (not counted in completion)
+     */
     public function updateCompletionPercentage(): void
     {
         $fields = [
@@ -132,10 +152,10 @@ class ExpertKyc extends Model
             'business_license_expiry' => 5,
 
             // Identity Verification (25% total)
-            'id_type' => 5,
-            'id_number' => 5,
+            'id_type' => 6,
+            'id_number' => 6,
             'id_document_front_path' => 10,
-            'id_document_back_path' => 5,
+            'id_document_back_path' => 3,
 
             // Insurance (20% total)
             'insurance_policy_number' => 5,
@@ -143,15 +163,8 @@ class ExpertKyc extends Model
             'insurance_expiry' => 3,
             'insurance_provider' => 2,
 
-            // Banking (15% total)
-            'bank_name' => 3,
-            'account_holder_name' => 3,
-            'account_number_encrypted' => 4,
-            'routing_number' => 3,
-            'tax_id_encrypted' => 2,
-
-            // Background Check (10% total)
-            'background_check_consent' => 10,
+            // Background Check (25% total)
+            'background_check_consent' => 25,
         ];
 
         $totalPercentage = 0;
@@ -172,74 +185,6 @@ class ExpertKyc extends Model
         $this->completion_percentage = min($totalPercentage, 100);
         $this->required_documents_uploaded = $this->hasRequiredDocuments();
         $this->save();
-    }
-
-    /**
-     * Encrypt and set account number
-     */
-    public function setAccountNumber(string $accountNumber): void
-    {
-        $this->account_number_encrypted = Crypt::encryptString($accountNumber);
-        $this->save();
-    }
-
-    /**
-     * Decrypt and get account number
-     */
-    public function getAccountNumber(): ?string
-    {
-        if (empty($this->account_number_encrypted)) {
-            return null;
-        }
-
-        try {
-            return Crypt::decryptString($this->account_number_encrypted);
-        } catch (\Exception $e) {
-            return null;
-        }
-    }
-
-    /**
-     * Encrypt and set tax ID
-     */
-    public function setTaxId(string $taxId): void
-    {
-        $this->tax_id_encrypted = Crypt::encryptString($taxId);
-        $this->save();
-    }
-
-    /**
-     * Decrypt and get tax ID
-     */
-    public function getTaxId(): ?string
-    {
-        if (empty($this->tax_id_encrypted)) {
-            return null;
-        }
-
-        try {
-            return Crypt::decryptString($this->tax_id_encrypted);
-        } catch (\Exception $e) {
-            return null;
-        }
-    }
-
-    /**
-     * Get masked account number (last 4 digits)
-     */
-    public function getMaskedAccountNumber(): ?string
-    {
-        $accountNumber = $this->getAccountNumber();
-        if (!$accountNumber) {
-            return null;
-        }
-
-        $length = strlen($accountNumber);
-        if ($length <= 4) {
-            return str_repeat('*', $length);
-        }
-
-        return str_repeat('*', $length - 4) . substr($accountNumber, -4);
     }
 
     /**
