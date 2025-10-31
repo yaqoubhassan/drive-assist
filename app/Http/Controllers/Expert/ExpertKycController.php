@@ -263,11 +263,9 @@ class ExpertKycController extends Controller
             // TODO: Send notification to admin
             // TODO: Send confirmation email to expert
 
-            return response()->json([
-                'success' => true,
-                'message' => 'KYC submitted successfully! Our team will review your information within 24-48 hours.',
-                'kyc' => $this->formatKycForFrontend($kyc->fresh()),
-            ]);
+            return redirect()
+                ->route('expert.dashboard')
+                ->with('success', 'KYC submitted successfully! Our team will review your information within 24-48 hours.');
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -276,10 +274,9 @@ class ExpertKycController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return response()->json([
-                'success' => false,
-                'error' => 'Failed to submit KYC. Please try again.',
-            ], 500);
+            return back()->withErrors([
+                'submission' => 'Failed to submit KYC. Please try again.',
+            ]);
         }
     }
 

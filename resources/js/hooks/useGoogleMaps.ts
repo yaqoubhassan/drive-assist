@@ -1,5 +1,8 @@
-// ✅ FIXED VERSION - Doesn't interfere with button clicks
-// Key Fix: Added check to ignore clicks on buttons and interactive elements
+// ✅ FIXED VERSION - Doesn't interfere with any buttons, especially KYC submission
+// Key Fixes:
+// 1. Better detection of interactive elements
+// 2. Special handling for submit buttons
+// 3. Check for data attributes to identify critical buttons
 
 import { useState, useEffect, useRef } from 'react';
 
@@ -177,22 +180,38 @@ export function useGoogleAutocomplete({
 
       console.log('✅ Autocomplete initialized successfully');
 
-      // ✅ CRITICAL FIX: Improved click-outside handler
+      // ✅ CRITICAL FIX: Improved click-outside handler with better button detection
       const handleClickOutside = (event: MouseEvent) => {
         const target = event.target as HTMLElement;
 
-        // ✅ FIX: Check if click is on any button or interactive element
+        // ✅ FIX 1: Comprehensive check for ALL interactive elements
         const isButton = target.closest('button');
         const isLink = target.closest('a');
-        const isFormControl = target.closest('input:not([type="text"]), select, textarea');
+        const isFormControl = target.closest('input, select, textarea');
         const isLabel = target.closest('label');
-        const isInteractiveElement = isButton || isLink || isFormControl || isLabel;
+        const isSvg = target.closest('svg');
+
+        // ✅ FIX 2: Check for submit buttons specifically (KYC, forms, etc.)
+        const isSubmitButton = target.closest('button[type="submit"], button[data-kyc-submit]');
+
+        // ✅ FIX 3: Check for any clickable element
+        const hasClickHandler = target.onclick !== null ||
+          target.getAttribute('onclick') !== null ||
+          target.closest('[onclick]') !== null;
+
+        // ✅ FIX 4: Check for Inertia/React Router links
+        const isInertiaLink = target.closest('[href]');
+
+        const isInteractiveElement = isButton || isLink || isFormControl ||
+          isLabel || isSvg || isSubmitButton ||
+          hasClickHandler || isInertiaLink;
 
         if (isInteractiveElement) {
           console.log('🎯 Click on interactive element, ignoring (allowing normal behavior)');
-          return; // ✅ Exit early, don't interfere with button clicks
+          return; // ✅ Exit early, don't interfere with ANY interactive element
         }
 
+        // Check if click is inside Google Maps dropdown
         const pacContainers = document.querySelectorAll('.pac-container');
 
         let isInsideDropdown = false;
@@ -234,10 +253,12 @@ export function useGoogleAutocomplete({
       };
 
       clickOutsideListenerRef.current = handleClickOutside;
+
+      // ✅ FIX 5: Use capture phase to detect clicks early, but DON'T preventDefault
       document.addEventListener('mousedown', handleClickOutside, true);
       input.addEventListener('focus', handleFocus);
 
-      console.log('✅ Click-outside listener added (with button exemption)');
+      console.log('✅ Click-outside listener added (with comprehensive button exemption)');
 
       const handleKeyDown = (e: KeyboardEvent) => {
         if (e.key === 'Enter') {

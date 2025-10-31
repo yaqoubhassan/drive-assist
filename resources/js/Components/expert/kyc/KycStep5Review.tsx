@@ -18,7 +18,7 @@ interface Props {
   nextStep: () => void;
   previousStep: () => void;
   saveProgress: () => void;
-  goToStep: (step: number) => void; // Now accepts goToStep function
+  goToStep: (step: number) => void;
 }
 
 export default function KycStep5Review({ data, updateData, previousStep, goToStep }: Props) {
@@ -76,35 +76,49 @@ export default function KycStep5Review({ data, updateData, previousStep, goToSte
   const allCompleted = sections.every(section => section.completed);
   const incompleteSection = sections.find(section => !section.completed);
 
-  const handleSubmit = async () => {
+  // ✅ FIX 1: Prevent event bubbling and use proper form submission
+  const handleSubmit = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    // ✅ CRITICAL: Stop event propagation to prevent Google Maps hook from interfering
+    e.preventDefault();
+    e.stopPropagation();
+
     if (!allCompleted) {
       setError('Please complete all required sections before submitting.');
       return;
     }
 
+    if (isSubmitting) {
+      return; // Prevent double submission
+    }
+
+    console.log('🚀 Starting KYC submission...');
     setIsSubmitting(true);
     setError(null);
 
     try {
-      const response = await fetch(route('expert.kyc.submit'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-        },
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        // Refresh the page to show updated status
-        router.reload({ only: ['kyc'] });
-      } else {
-        setError(result.errors?.join(', ') || 'Failed to submit KYC. Please try again.');
-      }
+      // ✅ FIX 2: Use Inertia router.post instead of fetch for better CSRF handling
+      router.post(
+        route('expert.kyc.submit'),
+        {},
+        {
+          onSuccess: (page) => {
+            console.log('✅ KYC submitted successfully');
+            // Inertia will handle the redirect and page update
+          },
+          onError: (errors) => {
+            console.error('❌ KYC submission failed:', errors);
+            setError(Object.values(errors).flat().join(', ') || 'Failed to submit KYC. Please try again.');
+            setIsSubmitting(false);
+          },
+          onFinish: () => {
+            // This runs whether success or error
+            setIsSubmitting(false);
+          },
+        }
+      );
     } catch (err) {
-      setError('An error occurred while submitting. Please try again.');
-    } finally {
+      console.error('❌ Unexpected error during KYC submission:', err);
+      setError('An unexpected error occurred. Please try again.');
       setIsSubmitting(false);
     }
   };
@@ -119,6 +133,27 @@ export default function KycStep5Review({ data, updateData, previousStep, goToSte
           Review your information before submitting for verification
         </p>
       </div>
+
+      {/* Error Display */}
+      {error && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4"
+        >
+          <div className="flex items-start space-x-3">
+            <XCircleIcon className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <h4 className="text-sm font-semibold text-red-900 dark:text-red-200 mb-1">
+                Submission Error
+              </h4>
+              <p className="text-sm text-red-800 dark:text-red-300">
+                {error}
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {/* Completion Status */}
       {!allCompleted && (
@@ -137,50 +172,32 @@ export default function KycStep5Review({ data, updateData, previousStep, goToSte
         </div>
       )}
 
-      {/* Error Display */}
-      {error && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4"
-        >
-          <div className="flex items-start space-x-3">
-            <XCircleIcon className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-            <div>
-              <h4 className="text-sm font-semibold text-red-900 dark:text-red-200 mb-1">
-                Submission Error
-              </h4>
-              <p className="text-sm text-red-800 dark:text-red-300">{error}</p>
-            </div>
-          </div>
-        </motion.div>
-      )}
-
-      {/* Review Sections */}
+      {/* Section Review */}
       <div className="space-y-4">
         {sections.map((section) => {
           const Icon = section.icon;
           return (
             <motion.div
               key={section.step}
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: section.step * 0.1 }}
-              className={`bg-white dark:bg-gray-800 border rounded-lg p-6 transition-all hover:shadow-md ${section.completed
+              className={`bg-white dark:bg-gray-800 border rounded-xl p-6 transition-all ${section.completed
                 ? 'border-green-200 dark:border-green-800'
                 : 'border-red-200 dark:border-red-800'
                 }`}
             >
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center space-x-3">
+              {/* Section Header */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-4">
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center ${section.completed
+                    className={`w-12 h-12 rounded-full flex items-center justify-center ${section.completed
                       ? 'bg-green-100 dark:bg-green-900/30'
                       : 'bg-red-100 dark:bg-red-900/30'
                       }`}
                   >
                     <Icon
-                      className={`w-5 h-5 ${section.completed
+                      className={`w-6 h-6 ${section.completed
                         ? 'text-green-600 dark:text-green-400'
                         : 'text-red-600 dark:text-red-400'
                         }`}
@@ -211,9 +228,12 @@ export default function KycStep5Review({ data, updateData, previousStep, goToSte
                   </div>
                 </div>
 
-                {/* Edit Button - Now uses goToStep */}
+                {/* Edit Button */}
                 <button
-                  onClick={() => goToStep(section.step)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    goToStep(section.step);
+                  }}
                   className="flex items-center space-x-2 px-4 py-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors font-medium"
                 >
                   <PencilIcon className="w-4 h-4" />
@@ -287,7 +307,10 @@ export default function KycStep5Review({ data, updateData, previousStep, goToSte
       {/* Navigation Buttons */}
       <div className="flex justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
         <button
-          onClick={previousStep}
+          onClick={(e) => {
+            e.stopPropagation();
+            previousStep();
+          }}
           disabled={isSubmitting}
           className="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
@@ -297,10 +320,13 @@ export default function KycStep5Review({ data, updateData, previousStep, goToSte
           <span>Previous</span>
         </button>
 
+        {/* ✅ FIX 3: Add data-kyc-submit attribute to help identify this button */}
         <button
           onClick={handleSubmit}
           disabled={!allCompleted || isSubmitting}
+          data-kyc-submit="true"
           className="px-8 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-400"
+          type="button"
         >
           {isSubmitting ? (
             <>
