@@ -123,29 +123,35 @@ class ExpertKyc extends Model
             && $this->id_document_front_path !== null;
     }
 
-    /**
-     * Calculate and update completion percentage
-     */
     public function updateCompletionPercentage(): void
     {
         $fields = [
-            'business_license_number' => 5,
-            'business_license_document_path' => 10,
+            // Business Documents (30% total)
+            'business_license_number' => 10,
+            'business_license_document_path' => 15,
             'business_license_expiry' => 5,
-            'insurance_policy_number' => 5,
-            'insurance_certificate_path' => 10,
-            'insurance_expiry' => 5,
-            'insurance_provider' => 5,
+
+            // Identity Verification (25% total)
             'id_type' => 5,
             'id_number' => 5,
             'id_document_front_path' => 10,
             'id_document_back_path' => 5,
+
+            // Insurance (20% total)
+            'insurance_policy_number' => 5,
+            'insurance_certificate_path' => 10,
+            'insurance_expiry' => 3,
+            'insurance_provider' => 2,
+
+            // Banking (15% total)
+            'bank_name' => 3,
+            'account_holder_name' => 3,
+            'account_number_encrypted' => 4,
+            'routing_number' => 3,
+            'tax_id_encrypted' => 2,
+
+            // Background Check (10% total)
             'background_check_consent' => 10,
-            'bank_name' => 5,
-            'account_holder_name' => 5,
-            'account_number_encrypted' => 5,
-            'routing_number' => 5,
-            'tax_id_encrypted' => 5,
         ];
 
         $totalPercentage = 0;
@@ -162,7 +168,8 @@ class ExpertKyc extends Model
             }
         }
 
-        $this->completion_percentage = $totalPercentage;
+        // Ensure we never exceed 100%
+        $this->completion_percentage = min($totalPercentage, 100);
         $this->required_documents_uploaded = $this->hasRequiredDocuments();
         $this->save();
     }
