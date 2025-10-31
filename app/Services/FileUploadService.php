@@ -4,12 +4,11 @@ namespace App\Services;
 
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use Intervention\Image\Facades\Image;
 
 class FileUploadService
 {
   /**
-   * Upload KYC document
+   * Upload KYC document to local storage
    */
   public function uploadKycDocument(UploadedFile $file, int $expertProfileId, string $documentType): string
   {
@@ -21,37 +20,10 @@ class FileUploadService
     $filename = $documentType . '_' . uniqid() . '_' . time() . '.' . $extension;
     $path = "kyc/{$expertProfileId}/{$filename}";
 
-    // If it's an image, optimize it
-    if (in_array($extension, ['jpg', 'jpeg', 'png'])) {
-      $this->uploadOptimizedImage($file, $path);
-    } else {
-      // Upload PDF directly
-      Storage::disk('s3')->put($path, file_get_contents($file->getRealPath()), 'private');
-    }
+    // Store file locally
+    Storage::disk('public')->put($path, file_get_contents($file->getRealPath()));
 
     return $path;
-  }
-
-  /**
-   * Upload and optimize image
-   */
-  private function uploadOptimizedImage(UploadedFile $file, string $path): void
-  {
-    $image = Image::make($file);
-
-    // Resize if too large (max 2000px width)
-    if ($image->width() > 2000) {
-      $image->resize(2000, null, function ($constraint) {
-        $constraint->aspectRatio();
-        $constraint->upsize();
-      });
-    }
-
-    // Encode with quality 85
-    $image->encode($file->getClientOriginalExtension(), 85);
-
-    // Upload to S3
-    Storage::disk('s3')->put($path, (string) $image, 'private');
   }
 
   /**
@@ -78,22 +50,22 @@ class FileUploadService
   }
 
   /**
-   * Delete KYC document
+   * Delete KYC document from local storage
    */
   public function deleteKycDocument(string $path): bool
   {
-    if (Storage::disk('s3')->exists($path)) {
-      return Storage::disk('s3')->delete($path);
+    if (Storage::disk('public')->exists($path)) {
+      return Storage::disk('public')->delete($path);
     }
 
     return false;
   }
 
   /**
-   * Get document URL with temporary access
+   * Get document URL from local storage
    */
-  public function getTemporaryUrl(string $path, int $minutes = 60): string
+  public function getDocumentUrl(string $path): string
   {
-    return Storage::disk('s3')->temporaryUrl($path, now()->addMinutes($minutes));
+    return Storage::disk('public')->url($path);
   }
 }

@@ -184,7 +184,7 @@ class ExpertKycController extends Controller
             // Delete old file if exists
             $oldPath = $this->getOldDocumentPath($kyc, $documentType);
             if ($oldPath) {
-                Storage::disk('s3')->delete($oldPath);
+                Storage::disk('public')->delete($oldPath);
             }
 
             // Upload new file
@@ -218,7 +218,7 @@ class ExpertKycController extends Controller
                 'success' => true,
                 'message' => 'Document uploaded successfully',
                 'path' => $path,
-                'url' => Storage::disk('s3')->url($path),
+                'url' => Storage::disk('public')->url($path),
                 'kyc' => $this->formatKycForFrontend($kyc->fresh()),
             ]);
         } catch (\Exception $e) {
@@ -426,13 +426,13 @@ class ExpertKycController extends Controller
             'business_license_number' => $kyc->business_license_number,
             'business_license_document_path' => $kyc->business_license_document_path,
             'business_license_document_url' => $kyc->business_license_document_path
-                ? Storage::disk('s3')->url($kyc->business_license_document_path)
+                ? Storage::disk('public')->url($kyc->business_license_document_path)
                 : null,
             'business_license_expiry' => $kyc->business_license_expiry?->format('Y-m-d'),
             'insurance_policy_number' => $kyc->insurance_policy_number,
             'insurance_certificate_path' => $kyc->insurance_certificate_path,
             'insurance_certificate_url' => $kyc->insurance_certificate_path
-                ? Storage::disk('s3')->url($kyc->insurance_certificate_path)
+                ? Storage::disk('public')->url($kyc->insurance_certificate_path)
                 : null,
             'insurance_expiry' => $kyc->insurance_expiry?->format('Y-m-d'),
             'insurance_provider' => $kyc->insurance_provider,
@@ -440,11 +440,11 @@ class ExpertKycController extends Controller
             'id_number' => $kyc->id_number,
             'id_document_front_path' => $kyc->id_document_front_path,
             'id_document_front_url' => $kyc->id_document_front_path
-                ? Storage::disk('s3')->url($kyc->id_document_front_path)
+                ? Storage::disk('public')->url($kyc->id_document_front_path)
                 : null,
             'id_document_back_path' => $kyc->id_document_back_path,
             'id_document_back_url' => $kyc->id_document_back_path
-                ? Storage::disk('s3')->url($kyc->id_document_back_path)
+                ? Storage::disk('public')->url($kyc->id_document_back_path)
                 : null,
             'background_check_consent' => $kyc->background_check_consent,
             'background_check_status' => $kyc->background_check_status,
@@ -456,7 +456,7 @@ class ExpertKycController extends Controller
             'routing_number' => $kyc->routing_number,
             'utility_bill_path' => $kyc->utility_bill_path,
             'utility_bill_url' => $kyc->utility_bill_path
-                ? Storage::disk('s3')->url($kyc->utility_bill_path)
+                ? Storage::disk('public')->url($kyc->utility_bill_path)
                 : null,
             'certifications' => $kyc->certifications ?? [],
             'professional_references' => $kyc->professional_references ?? [],
