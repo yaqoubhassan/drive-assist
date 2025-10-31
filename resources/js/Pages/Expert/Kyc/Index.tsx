@@ -79,10 +79,33 @@ export default function Index({ kyc, expertProfile }: Props) {
     setKycData((prev) => ({ ...prev, ...newData }));
   };
 
+  /**
+   * Navigate to a specific step in the KYC process
+   * 
+   * Rules:
+   * - Allows backward navigation to any previous step (for editing)
+   * - Prevents forward jumps (users must complete steps in order)
+   * - Automatically saves progress when navigating
+   * 
+   * @param step - The step number to navigate to (1-5)
+   */
   const goToStep = (step: number) => {
-    // Don't allow jumping ahead
-    if (step > currentStep + 1) return;
+    // Prevent jumping ahead more than one step
+    // This allows backward navigation while enforcing sequential forward progression
+    if (step > currentStep + 1) {
+      console.log('Cannot jump ahead more than one step. Please complete steps in order.');
+      return;
+    }
+
+    // Update the current step
     setCurrentStep(step);
+
+    // Automatically save progress when navigating
+    // This ensures the backend knows which step the user is on
+    saveProgress(step);
+
+    // Smooth scroll to top for better UX
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const nextStep = () => {
@@ -133,6 +156,7 @@ export default function Index({ kyc, expertProfile }: Props) {
       nextStep,
       previousStep,
       saveProgress,
+      goToStep, // Pass goToStep to child components (especially Step 5 Review)
     };
 
     switch (currentStep) {
