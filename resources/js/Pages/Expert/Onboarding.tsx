@@ -112,45 +112,35 @@ export default function Onboarding({
     }
   };
 
-  // Navigation handlers - FIX: Accept event parameter and prevent default
+  // Navigation handlers
   const handleNextStep = (e?: React.MouseEvent<HTMLButtonElement>) => {
-    // Explicitly prevent form submission
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
 
     if (currentStep < 5) {
-      console.log('Moving to next step:', currentStep + 1);
       setCurrentStep(currentStep + 1);
-    } else {
-      console.log('Already on final step');
     }
   };
 
   const handlePreviousStep = (e?: React.MouseEvent<HTMLButtonElement>) => {
-    // Explicitly prevent form submission
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
 
     if (currentStep > 1) {
-      console.log('Moving to previous step:', currentStep - 1);
       setCurrentStep(currentStep - 1);
-    } else {
-      console.log('Already on first step');
     }
   };
 
   const handleSaveAndExit = (e?: React.MouseEvent<HTMLButtonElement>) => {
-    // Explicitly prevent form submission
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
 
-    console.log('Saving progress and exiting...');
     post(route('expert.onboarding.save'), {
       preserveScroll: true,
     });
@@ -162,26 +152,18 @@ export default function Onboarding({
 
     // Only submit if we're on step 5
     if (currentStep !== 5) {
-      console.warn('Form submission prevented - not on final step. Current step:', currentStep);
       return;
     }
 
-    console.log('Submitting onboarding completion...');
     post(route('expert.onboarding.complete'));
   };
-
-  // Show Google Maps error if any
-  useEffect(() => {
-    if (error) {
-      console.error('Google Maps Error:', error);
-    }
-  }, [error]);
 
   return (
     <>
       <Head title="Complete Your Profile" />
 
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4 sm:px-6 lg:px-8">
+      {/* Enhanced background with gradient blend */}
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/20 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 py-6 sm:py-8 px-4 sm:px-6 lg:px-8 transition-colors duration-300">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <OnboardingHeader currentStep={currentStep} totalSteps={5} />
@@ -195,94 +177,128 @@ export default function Onboarding({
 
           {/* Google Maps Error */}
           {error && (
-            <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
-              <p className="text-sm text-red-800 dark:text-red-200">{error.message}</p>
-            </div>
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl shadow-sm"
+            >
+              <div className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+                <div>
+                  <h3 className="text-sm font-semibold text-red-800 dark:text-red-200">Google Maps Error</h3>
+                  <p className="text-sm text-red-700 dark:text-red-300 mt-1">{error.message}</p>
+                </div>
+              </div>
+            </motion.div>
           )}
 
-          {/* Form Card */}
+          {/* Premium Form Card */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8"
+            transition={{ delay: 0.2, duration: 0.5 }}
+            className="relative group"
           >
-            <form onSubmit={handleSubmit} className="space-y-8">
-              <AnimatePresence mode="wait">
-                {/* Step 1: Basic Information */}
-                {currentStep === 1 && (
-                  <BasicInfoStep
-                    data={data}
-                    setData={updateData}
-                    errors={errors}
-                    businessTypes={businessTypes}
-                  />
-                )}
+            {/* Gradient border effect */}
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-2xl opacity-0 group-hover:opacity-100 blur transition-opacity duration-500" />
 
-                {/* Step 2: Location */}
-                {currentStep === 2 && (
-                  <LocationStep
-                    data={data}
-                    setData={updateData}
-                    errors={errors}
-                    mapsLoaded={mapsLoaded}
-                  />
-                )}
+            {/* Main card */}
+            <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+              {/* Subtle top border accent */}
+              <div className="h-1 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600" />
 
-                {/* Step 3: Services */}
-                {currentStep === 3 && (
-                  <ServicesStep
-                    data={data}
-                    setData={updateData}
-                    errors={errors}
-                    availableSpecialties={availableSpecialties}
-                  />
-                )}
+              {/* Form content */}
+              <div className="p-6 sm:p-8">
+                <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
+                  <AnimatePresence mode="wait">
+                    {/* Step 1: Basic Information */}
+                    {currentStep === 1 && (
+                      <BasicInfoStep
+                        key="step-1"
+                        data={data}
+                        setData={updateData}
+                        errors={errors}
+                        businessTypes={businessTypes}
+                      />
+                    )}
 
-                {/* Step 4: Pricing */}
-                {currentStep === 4 && (
-                  <PricingStep
-                    data={data}
-                    setData={updateData}
-                    errors={errors}
-                  />
-                )}
+                    {/* Step 2: Location */}
+                    {currentStep === 2 && (
+                      <LocationStep
+                        key="step-2"
+                        data={data}
+                        setData={updateData}
+                        errors={errors}
+                        mapsLoaded={mapsLoaded}
+                      />
+                    )}
 
-                {/* Step 5: Operating Hours */}
-                {currentStep === 5 && (
-                  <OperatingHoursStep
-                    data={data}
-                    setData={updateData}
-                    errors={errors}
-                  />
-                )}
-              </AnimatePresence>
+                    {/* Step 3: Services */}
+                    {currentStep === 3 && (
+                      <ServicesStep
+                        key="step-3"
+                        data={data}
+                        setData={updateData}
+                        errors={errors}
+                        availableSpecialties={availableSpecialties}
+                      />
+                    )}
 
-              {/* Navigation Buttons */}
-              <OnboardingNavigation
-                currentStep={currentStep}
-                totalSteps={5}
-                processing={processing}
-                isStepComplete={isStepComplete}
-                onPrevious={handlePreviousStep}
-                onNext={handleNextStep}
-                onSaveAndExit={handleSaveAndExit}
-              />
-            </form>
+                    {/* Step 4: Pricing */}
+                    {currentStep === 4 && (
+                      <PricingStep
+                        key="step-4"
+                        data={data}
+                        setData={updateData}
+                        errors={errors}
+                      />
+                    )}
+
+                    {/* Step 5: Operating Hours */}
+                    {currentStep === 5 && (
+                      <OperatingHoursStep
+                        key="step-5"
+                        data={data}
+                        setData={updateData}
+                        errors={errors}
+                      />
+                    )}
+                  </AnimatePresence>
+
+                  {/* Navigation Buttons */}
+                  <OnboardingNavigation
+                    currentStep={currentStep}
+                    totalSteps={5}
+                    processing={processing}
+                    isStepComplete={isStepComplete}
+                    onPrevious={handlePreviousStep}
+                    onNext={handleNextStep}
+                    onSaveAndExit={handleSaveAndExit}
+                  />
+                </form>
+              </div>
+            </div>
           </motion.div>
 
           {/* Help Text */}
-          <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6"
+          >
             Need help?{' '}
             <a
               href="mailto:support@driveassist.com"
-              className="text-blue-600 hover:underline"
+              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors"
             >
               Contact Support
             </a>
-          </p>
+          </motion.p>
         </div>
-      </div >
+      </div>
     </>
   );
 }
