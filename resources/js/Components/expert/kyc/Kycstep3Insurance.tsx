@@ -179,7 +179,7 @@ export default function KycStep3Insurance({ data, updateData, nextStep, previous
         )}
 
         {/* Expiring Soon Warning */}
-        {isExpiringsoon() && (
+        {isExpiringSoon() && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
