@@ -8,6 +8,7 @@ import {
   ShieldCheckIcon,
   ClipboardDocumentCheckIcon,
   ExclamationTriangleIcon,
+  PencilIcon,
 } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
 
@@ -17,9 +18,10 @@ interface Props {
   nextStep: () => void;
   previousStep: () => void;
   saveProgress: () => void;
+  goToStep: (step: number) => void; // Now accepts goToStep function
 }
 
-export default function KycStep5Review({ data, updateData, previousStep }: Props) {
+export default function KycStep5Review({ data, updateData, previousStep, goToStep }: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -135,6 +137,25 @@ export default function KycStep5Review({ data, updateData, previousStep }: Props
         </div>
       )}
 
+      {/* Error Display */}
+      {error && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4"
+        >
+          <div className="flex items-start space-x-3">
+            <XCircleIcon className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <h4 className="text-sm font-semibold text-red-900 dark:text-red-200 mb-1">
+                Submission Error
+              </h4>
+              <p className="text-sm text-red-800 dark:text-red-300">{error}</p>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* Review Sections */}
       <div className="space-y-4">
         {sections.map((section) => {
@@ -145,7 +166,7 @@ export default function KycStep5Review({ data, updateData, previousStep }: Props
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: section.step * 0.1 }}
-              className={`bg-white dark:bg-gray-700 border rounded-lg p-6 ${section.completed
+              className={`bg-white dark:bg-gray-800 border rounded-lg p-6 transition-all hover:shadow-md ${section.completed
                 ? 'border-green-200 dark:border-green-800'
                 : 'border-red-200 dark:border-red-800'
                 }`}
@@ -170,29 +191,43 @@ export default function KycStep5Review({ data, updateData, previousStep }: Props
                       {section.title}
                     </h3>
                     <p
-                      className={`text-sm ${section.completed
+                      className={`text-sm flex items-center space-x-1 ${section.completed
                         ? 'text-green-600 dark:text-green-400'
                         : 'text-red-600 dark:text-red-400'
                         }`}
                     >
-                      {section.completed ? 'Complete' : 'Incomplete'}
+                      {section.completed ? (
+                        <>
+                          <CheckCircleIcon className="w-4 h-4" />
+                          <span>Complete</span>
+                        </>
+                      ) : (
+                        <>
+                          <XCircleIcon className="w-4 h-4" />
+                          <span>Incomplete</span>
+                        </>
+                      )}
                     </p>
                   </div>
                 </div>
+
+                {/* Edit Button - Now uses goToStep */}
                 <button
-                  onClick={() => router.visit(route('expert.kyc.index'), {
-                    data: { step: section.step },
-                    preserveState: true,
-                  })}
-                  className="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium"
+                  onClick={() => goToStep(section.step)}
+                  className="flex items-center space-x-2 px-4 py-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors font-medium"
                 >
-                  Edit
+                  <PencilIcon className="w-4 h-4" />
+                  <span>Edit</span>
                 </button>
               </div>
 
+              {/* Section Items */}
               <div className="space-y-3 ml-13">
                 {section.items.map((item, index) => (
-                  <div key={index} className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-600 last:border-0">
+                  <div
+                    key={index}
+                    className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-0"
+                  >
                     <span className="text-sm text-gray-600 dark:text-gray-400">
                       {item.label}
                     </span>
@@ -203,16 +238,16 @@ export default function KycStep5Review({ data, updateData, previousStep }: Props
                             {item.value}
                           </span>
                           {item.completed && (
-                            <CheckCircleIcon className="w-4 h-4 text-green-500" />
+                            <CheckCircleIcon className="w-4 h-4 text-green-600 dark:text-green-400" />
                           )}
                         </>
                       ) : (
-                        <div className="flex items-center space-x-2">
+                        <>
                           <span className="text-sm text-red-600 dark:text-red-400">
-                            Missing
+                            Not provided
                           </span>
-                          <XCircleIcon className="w-4 h-4 text-red-500" />
-                        </div>
+                          <XCircleIcon className="w-4 h-4 text-red-600 dark:text-red-400" />
+                        </>
                       )}
                     </div>
                   </div>
@@ -223,27 +258,30 @@ export default function KycStep5Review({ data, updateData, previousStep }: Props
         })}
       </div>
 
-      {/* Terms and Conditions */}
-      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-        <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-200 mb-2">
-          By submitting, you confirm that:
-        </h4>
-        <ul className="text-sm text-blue-800 dark:text-blue-300 space-y-1">
-          <li>• All information provided is accurate and truthful</li>
-          <li>• You have the right to work as an automotive expert</li>
-          <li>• You consent to background verification checks</li>
-          <li>• You agree to DriveAssist's Terms of Service</li>
-        </ul>
-      </div>
-
-      {/* Error Message */}
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+      {/* Success Message (when all complete) */}
+      {allCompleted && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6"
+        >
           <div className="flex items-start space-x-3">
-            <XCircleIcon className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-red-800 dark:text-red-300">{error}</p>
+            <CheckCircleIcon className="h-6 w-6 text-green-600 dark:text-green-400 flex-shrink-0" />
+            <div>
+              <h4 className="text-base font-semibold text-green-900 dark:text-green-200 mb-2">
+                All Information Complete! 🎉
+              </h4>
+              <p className="text-sm text-green-800 dark:text-green-300 mb-3">
+                Your KYC information is complete and ready for submission. Our team will review your application within 24-48 hours.
+              </p>
+              <ul className="text-sm text-green-700 dark:text-green-400 space-y-1 ml-4">
+                <li className="list-disc">You'll receive an email notification once reviewed</li>
+                <li className="list-disc">You can still edit information before submitting</li>
+                <li className="list-disc">Keep your documents up to date</li>
+              </ul>
+            </div>
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* Navigation Buttons */}
