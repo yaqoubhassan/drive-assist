@@ -124,24 +124,46 @@ class ExpertKyc extends Model
     }
 
     /**
+     * Check if back ID document is required for the current ID type
+     * 
+     * @return bool True if back ID is required, false otherwise
+     */
+    public function isBackIdRequired(): bool
+    {
+        return in_array($this->id_type, ['national_id', 'drivers_license']);
+    }
+
+    /**
      * Check if all required documents are uploaded
+     * For national_id and drivers_license, back document is also required
      */
     public function hasRequiredDocuments(): bool
     {
-        return $this->business_license_document_path !== null
+        $hasBasicDocs = $this->business_license_document_path !== null
             && $this->insurance_certificate_path !== null
             && $this->id_document_front_path !== null;
+
+        // For national_id or drivers_license, back is also required
+        if ($this->isBackIdRequired()) {
+            return $hasBasicDocs && $this->id_document_back_path !== null;
+        }
+
+        return $hasBasicDocs;
     }
 
     /**
      * Calculate and update completion percentage
-     * Updated to reflect 4 steps (removed banking - Step 4)
+     * CONDITIONAL WEIGHTING - Adapts to ID type
      * 
      * Step 1: Business Documents (30%)
      * Step 2: Identity Verification (25%)
+     *   - For national_id or drivers_license: Back ID is required (front 10% + back 3% = 13%)
+     *   - For passport: Only front required (front gets full 13%)
      * Step 3: Insurance (20%)
      * Step 4: Background Check (25%)
      * Step 5: Review (not counted in completion)
+     * 
+     * This ensures 100% is always achievable based on the selected ID type
      */
     public function updateCompletionPercentage(): void
     {
@@ -151,11 +173,13 @@ class ExpertKyc extends Model
             'business_license_document_path' => 15,
             'business_license_expiry' => 5,
 
-            // Identity Verification (25% total)
+            // Identity Verification base fields (12% before ID documents)
             'id_type' => 6,
             'id_number' => 6,
-            'id_document_front_path' => 10,
-            'id_document_back_path' => 3,
+
+            // ID document weights calculated conditionally below (13% total)
+            // 'id_document_front_path' => varies (10% or 13%)
+            // 'id_document_back_path' => varies (3% or 0%)
 
             // Insurance (20% total)
             'insurance_policy_number' => 5,
@@ -169,6 +193,7 @@ class ExpertKyc extends Model
 
         $totalPercentage = 0;
 
+        // Calculate percentage for non-ID-document fields
         foreach ($fields as $field => $weight) {
             if ($field === 'background_check_consent') {
                 if ($this->$field === true) {
@@ -179,6 +204,32 @@ class ExpertKyc extends Model
                     $totalPercentage += $weight;
                 }
             }
+        }
+
+        // 🎯 CONDITIONAL ID DOCUMENT WEIGHTING (13% total)
+        // Adapts based on the selected ID type to ensure 100% is always achievable
+
+        if (in_array($this->id_type, ['national_id', 'drivers_license'])) {
+            // For national_id and drivers_license: Both front and back are required
+            // Front: 10%, Back: 3% (total 13%)
+
+            if (!empty($this->id_document_front_path)) {
+                $totalPercentage += 10;
+            }
+
+            if (!empty($this->id_document_back_path)) {
+                $totalPercentage += 3;
+            }
+        } else {
+            // For passport and other ID types: Only front is required
+            // Front gets the full 13% (back is not applicable)
+
+            if (!empty($this->id_document_front_path)) {
+                $totalPercentage += 13;
+            }
+
+            // Back document doesn't count for passports
+            // (passports don't have meaningful back sides for verification)
         }
 
         // Ensure we never exceed 100%
