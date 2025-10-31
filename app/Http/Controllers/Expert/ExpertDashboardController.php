@@ -85,6 +85,18 @@ class ExpertDashboardController extends Controller
             ]);
         }
 
+        $kycInfo = null;
+        if ($expertProfile->kyc) {
+            $kycInfo = [
+                'kyc_status' => $expertProfile->kyc->kyc_status,
+                'completion_percentage' => $expertProfile->kyc->completion_percentage,
+                'is_approved' => $expertProfile->kyc->isApproved(),
+                'is_pending_review' => $expertProfile->kyc->isPendingReview(),
+                'needs_resubmission' => $expertProfile->kyc->needsResubmission(),
+                'rejection_reason' => $expertProfile->kyc->rejection_reason,
+            ];
+        }
+
         // Job status distribution (for pie chart)
         $jobStatusData = [
             [
@@ -126,6 +138,7 @@ class ExpertDashboardController extends Controller
             'recentLeads' => $recentLeads,
             'earningsData' => $earningsData,
             'jobStatusData' => array_filter($jobStatusData, fn($item) => $item['count'] > 0),
+            'kycInfo' => $kycInfo,
         ]);
     }
 

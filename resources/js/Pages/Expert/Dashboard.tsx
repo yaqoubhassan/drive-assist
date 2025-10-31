@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import ExpertDashboardLayout from '@/Layouts/Expertdashboardlayout';
 import { motion } from 'framer-motion';
 import {
@@ -8,12 +8,23 @@ import {
   CurrencyDollarIcon,
   EyeIcon,
   CheckCircleIcon,
+  ExclamationTriangleIcon,
+  ShieldCheckIcon,
 } from '@heroicons/react/24/outline';
 import {
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
 } from '@heroicons/react/24/solid';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+
+interface KycInfo {
+  kyc_status: string;
+  completion_percentage: number;
+  is_approved: boolean;
+  is_pending_review: boolean;
+  needs_resubmission: boolean;
+  rejection_reason: string | null;
+}
 
 interface DashboardProps {
   expert: {
@@ -33,6 +44,7 @@ interface DashboardProps {
     leadsLastWeek: number;
     earningsLastMonth: number;
   };
+  kycInfo?: KycInfo;
   recentLeads: Array<{
     id: number;
     driverName: string;
@@ -50,7 +62,7 @@ interface DashboardProps {
   }>;
 }
 
-export default function Dashboard({ expert, stats, recentLeads, earningsData, jobStatusData }: DashboardProps) {
+export default function Dashboard({ expert, stats, kycInfo, recentLeads, earningsData, jobStatusData }: DashboardProps) {
   // Calculate trend percentages
   const leadsTrend = stats.leadsLastWeek > 0
     ? ((stats.leadsThisWeek - stats.leadsLastWeek) / stats.leadsLastWeek) * 100
@@ -60,138 +72,249 @@ export default function Dashboard({ expert, stats, recentLeads, earningsData, jo
     ? ((stats.monthlyEarnings - stats.earningsLastMonth) / stats.earningsLastMonth) * 100
     : 0;
 
-  // Stats cards data
-  const statsCards = [
-    {
-      title: 'New Leads',
-      value: stats.newLeads,
-      icon: UsersIcon,
-      trend: leadsTrend,
-      trendLabel: 'vs last week',
-      color: 'blue',
-      bgColor: 'bg-blue-500',
-    },
-    {
-      title: 'Active Jobs',
-      value: stats.activeJobs,
-      icon: BriefcaseIcon,
-      color: 'purple',
-      bgColor: 'bg-purple-500',
-    },
-    {
-      title: 'Monthly Earnings',
-      value: `$${stats.monthlyEarnings.toLocaleString()}`,
-      icon: CurrencyDollarIcon,
-      trend: earningsTrend,
-      trendLabel: 'vs last month',
-      color: 'green',
-      bgColor: 'bg-green-500',
-    },
-    {
-      title: 'Average Rating',
-      value: expert.rating.toFixed(1),
-      icon: StarIcon,
-      suffix: '/ 5.0',
-      color: 'yellow',
-      bgColor: 'bg-yellow-500',
-    },
-  ];
-
-  // Pie chart colors
+  // Colors for pie chart
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444'];
 
   return (
-    <ExpertDashboardLayout title="Dashboard">
-      <Head title="Expert Dashboard" />
+    <ExpertDashboardLayout>
+      <Head title="Dashboard" />
 
       <div className="space-y-6">
-        {/* Welcome Banner */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-6 text-white"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold mb-2">
-                Welcome back, {expert.businessName}! 👋
-              </h1>
-              <p className="text-blue-100">
-                Here's what's happening with your business today.
-              </p>
-            </div>
-            {expert.verificationStatus === 'pending' && (
-              <div className="hidden md:block">
-                <div className="bg-yellow-400 text-yellow-900 px-4 py-2 rounded-lg font-semibold">
-                  ⏳ Verification Pending
-                </div>
-              </div>
-            )}
-            {expert.verificationStatus === 'approved' && (
-              <div className="hidden md:block">
-                <div className="bg-green-400 text-green-900 px-4 py-2 rounded-lg font-semibold flex items-center">
-                  <CheckCircleIcon className="h-5 w-5 mr-2" />
-                  Verified
-                </div>
-              </div>
-            )}
-          </div>
-        </motion.div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {statsCards.map((stat, index) => (
-            <motion.div
-              key={stat.title}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className={`p-3 ${stat.bgColor} rounded-lg`}>
-                  <stat.icon className="h-6 w-6 text-white" />
-                </div>
-                {stat.trend !== undefined && (
-                  <div className={`flex items-center text-sm font-semibold ${stat.trend >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {stat.trend >= 0 ? (
-                      <ArrowTrendingUpIcon className="h-4 w-4 mr-1" />
-                    ) : (
-                      <ArrowTrendingDownIcon className="h-4 w-4 mr-1" />
-                    )}
-                    {Math.abs(stat.trend).toFixed(1)}%
-                  </div>
-                )}
-              </div>
-              <h3 className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">
-                {stat.title}
-              </h3>
-              <div className="flex items-baseline">
-                <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                  {stat.value}
-                </p>
-                {stat.suffix && (
-                  <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
-                    {stat.suffix}
-                  </span>
-                )}
-              </div>
-              {stat.trendLabel && (
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  {stat.trendLabel}
-                </p>
-              )}
-            </motion.div>
-          ))}
+        {/* Page Header */}
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            Welcome back, {expert.businessName}! 👋
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
+            Here's what's happening with your business today.
+          </p>
         </div>
 
-        {/* Charts Section */}
+        {/* KYC Status Banner */}
+        {kycInfo && !kycInfo.is_approved && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`rounded-lg border-2 p-4 ${kycInfo.is_pending_review
+              ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-800'
+              : kycInfo.needs_resubmission
+                ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-300 dark:border-orange-800'
+                : 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-800'
+              }`}
+          >
+            <div className="flex items-start justify-between">
+              <div className="flex items-start space-x-3 flex-1">
+                <div className="flex-shrink-0">
+                  {kycInfo.is_pending_review ? (
+                    <ShieldCheckIcon className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
+                  ) : (
+                    <ExclamationTriangleIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <h3 className={`text-sm font-semibold mb-1 ${kycInfo.is_pending_review
+                    ? 'text-yellow-900 dark:text-yellow-100'
+                    : 'text-blue-900 dark:text-blue-100'
+                    }`}>
+                    {kycInfo.is_pending_review
+                      ? 'KYC Under Review'
+                      : kycInfo.needs_resubmission
+                        ? 'KYC Resubmission Required'
+                        : 'Complete Your KYC Verification'}
+                  </h3>
+                  <p className={`text-sm mb-3 ${kycInfo.is_pending_review
+                    ? 'text-yellow-800 dark:text-yellow-200'
+                    : 'text-blue-800 dark:text-blue-200'
+                    }`}>
+                    {kycInfo.is_pending_review
+                      ? 'Your KYC is being reviewed by our team. This usually takes 24-48 hours.'
+                      : kycInfo.needs_resubmission
+                        ? kycInfo.rejection_reason || 'Please update your information and resubmit.'
+                        : `${kycInfo.completion_percentage}% complete • Unlock all features by completing verification`}
+                  </p>
+                  {!kycInfo.is_pending_review && (
+                    <div className="flex items-center space-x-3">
+                      <div className="flex-1 max-w-xs bg-white dark:bg-gray-800 rounded-full h-2">
+                        <motion.div
+                          className="bg-blue-600 dark:bg-blue-500 h-2 rounded-full"
+                          initial={{ width: 0 }}
+                          animate={{ width: `${kycInfo.completion_percentage}%` }}
+                          transition={{ duration: 0.8 }}
+                        />
+                      </div>
+                      <Link
+                        href={route('expert.kyc.index')}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors"
+                      >
+                        {kycInfo.completion_percentage > 0 ? 'Continue Verification' : 'Start KYC'}
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {kycInfo && kycInfo.is_approved && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-green-50 dark:bg-green-900/20 border-2 border-green-300 dark:border-green-800 rounded-lg p-4"
+          >
+            <div className="flex items-center space-x-3">
+              <CheckCircleIcon className="h-6 w-6 text-green-600 dark:text-green-400 flex-shrink-0" />
+              <div>
+                <h3 className="text-sm font-semibold text-green-900 dark:text-green-100">
+                  KYC Verified ✓
+                </h3>
+                <p className="text-sm text-green-800 dark:text-green-200">
+                  Your account is fully verified. You have access to all platform features.
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* New Leads Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                  New Leads
+                </p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                  {stats.newLeads}
+                </p>
+                <div className="flex items-center mt-2">
+                  {leadsTrend >= 0 ? (
+                    <ArrowTrendingUpIcon className="h-4 w-4 text-green-500 mr-1" />
+                  ) : (
+                    <ArrowTrendingDownIcon className="h-4 w-4 text-red-500 mr-1" />
+                  )}
+                  <span
+                    className={`text-sm font-medium ${leadsTrend >= 0 ? 'text-green-600' : 'text-red-600'
+                      }`}
+                  >
+                    {Math.abs(leadsTrend).toFixed(1)}%
+                  </span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">
+                    vs last week
+                  </span>
+                </div>
+              </div>
+              <div className="w-14 h-14 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                <UsersIcon className="h-7 w-7 text-blue-600 dark:text-blue-400" />
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Active Jobs Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                  Active Jobs
+                </p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                  {stats.activeJobs}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  In progress
+                </p>
+              </div>
+              <div className="w-14 h-14 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
+                <BriefcaseIcon className="h-7 w-7 text-green-600 dark:text-green-400" />
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Monthly Earnings Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                  This Month
+                </p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                  ${stats.monthlyEarnings.toLocaleString()}
+                </p>
+                <div className="flex items-center mt-2">
+                  {earningsTrend >= 0 ? (
+                    <ArrowTrendingUpIcon className="h-4 w-4 text-green-500 mr-1" />
+                  ) : (
+                    <ArrowTrendingDownIcon className="h-4 w-4 text-red-500 mr-1" />
+                  )}
+                  <span
+                    className={`text-sm font-medium ${earningsTrend >= 0 ? 'text-green-600' : 'text-red-600'
+                      }`}
+                  >
+                    {Math.abs(earningsTrend).toFixed(1)}%
+                  </span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">
+                    vs last month
+                  </span>
+                </div>
+              </div>
+              <div className="w-14 h-14 bg-yellow-100 dark:bg-yellow-900 rounded-full flex items-center justify-center">
+                <CurrencyDollarIcon className="h-7 w-7 text-yellow-600 dark:text-yellow-400" />
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Average Rating Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                  Average Rating
+                </p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                  {expert.rating.toFixed(1)}
+                </p>
+                <div className="flex items-center mt-2">
+                  <StarIcon className="h-4 w-4 text-yellow-400 fill-current" />
+                  <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">
+                    Based on {expert.totalJobs} reviews
+                  </span>
+                </div>
+              </div>
+              <div className="w-14 h-14 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center">
+                <StarIcon className="h-7 w-7 text-purple-600 dark:text-purple-400" />
+              </div>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Earnings Chart */}
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.4 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
             className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm"
           >
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
@@ -210,7 +333,6 @@ export default function Dashboard({ expert, stats, recentLeads, earningsData, jo
                     color: '#fff',
                   }}
                 />
-                <Legend />
                 <Line
                   type="monotone"
                   dataKey="earnings"
@@ -225,9 +347,9 @@ export default function Dashboard({ expert, stats, recentLeads, earningsData, jo
 
           {/* Job Status Distribution */}
           <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.5 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
             className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm"
           >
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
@@ -240,7 +362,12 @@ export default function Dashboard({ expert, stats, recentLeads, earningsData, jo
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }) => `${name}: ${((percent as number) * 100).toFixed(0)}%`}
+                  label={(props) => {
+                    const { name, value, index } = props;
+                    const entry = jobStatusData[index];
+                    const total = jobStatusData.reduce((sum, item) => sum + item.count, 0);
+                    return `${entry.status}: ${((entry.count / total) * 100).toFixed(0)}%`;
+                  }}
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="count"
@@ -268,27 +395,27 @@ export default function Dashboard({ expert, stats, recentLeads, earningsData, jo
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
+            transition={{ delay: 0.7 }}
             className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm"
           >
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                 Recent Leads
               </h3>
-              <a
+              <Link
                 href={route('expert.leads.index')}
                 className="text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium"
               >
                 View All
-              </a>
+              </Link>
             </div>
             <div className="space-y-4">
               {recentLeads.length > 0 ? (
                 recentLeads.map((lead) => (
-                  <div
+                  <Link
                     key={lead.id}
-                    className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-500 dark:hover:border-blue-500 transition-colors cursor-pointer"
-                    onClick={() => window.location.href = route('expert.leads.show', lead.id)}
+                    href={route('expert.leads.show', lead.id)}
+                    className="block p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-500 dark:hover:border-blue-500 transition-colors"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -302,16 +429,20 @@ export default function Dashboard({ expert, stats, recentLeads, earningsData, jo
                           {new Date(lead.createdAt).toLocaleDateString()} at {new Date(lead.createdAt).toLocaleTimeString()}
                         </p>
                       </div>
-                      <span className={`
-                                                ml-4 px-3 py-1 text-xs font-semibold rounded-full flex-shrink-0
-                                                ${lead.status === 'new' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : ''}
-                                                ${lead.status === 'contacted' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : ''}
-                                                ${lead.status === 'in_progress' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' : ''}
-                                            `}>
+                      <span
+                        className={`ml-4 px-3 py-1 text-xs font-semibold rounded-full flex-shrink-0 ${lead.status === 'new'
+                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                          : lead.status === 'contacted'
+                            ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                            : lead.status === 'in_progress'
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                              : 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
+                          }`}
+                      >
                         {lead.status.replace('_', ' ').toUpperCase()}
                       </span>
                     </div>
-                  </div>
+                  </Link>
                 ))
               ) : (
                 <div className="text-center py-12">
@@ -328,7 +459,7 @@ export default function Dashboard({ expert, stats, recentLeads, earningsData, jo
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7 }}
+            transition={{ delay: 0.8 }}
             className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm"
           >
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">

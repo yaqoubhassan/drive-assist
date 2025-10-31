@@ -10,14 +10,12 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\CarIssueController;
-use App\Http\Controllers\DiagnosisController;
 use App\Http\Controllers\Driver\DriverDashboardController;
 use App\Http\Controllers\DrivingTipController;
 use App\Http\Controllers\ElectricVehicleController;
 use App\Http\Controllers\Expert\ExpertDashboardController;
 use App\Http\Controllers\Expert\ExpertLeadController;
 use App\Http\Controllers\Expert\ExpertOnboardingController;
-// use App\Http\Controllers\Expert\ExpertRegistrationController;
 use App\Http\Controllers\ExpertContactController;
 use App\Http\Controllers\ExpertController;
 use App\Http\Controllers\FluidGuideController;
@@ -72,9 +70,6 @@ Route::prefix('diagnose')->name('diagnose.')->group(function () {
     Route::get('/', function () {
         return Inertia::render('Diagnose/Index');
     })->name('index');
-
-    // Route::post('/submit', [DiagnosisController::class, 'store'])->name('submit');
-    // Route::get('/{diagnosis}/results', [DiagnosisController::class, 'show'])->name('results');
 });
 
 // Expert Search & Profiles (Public)
@@ -235,22 +230,6 @@ Route::middleware('auth')->group(function () {
     // Logout
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
         ->name('logout');
-});
-
-/*
-|--------------------------------------------------------------------------
-| Expert Registration (Guest/Unauthenticated)
-|--------------------------------------------------------------------------
-|
-| Special registration flow for automotive experts
-|
-*/
-
-Route::middleware('guest')->group(function () {
-    // Route::get('/expert/register', [ExpertRegistrationController::class, 'create'])
-    //     ->name('expert.register');
-    // Route::post('/expert/register', [ExpertRegistrationController::class, 'store'])
-    //     ->name('expert.register.store');
 });
 
 /*
