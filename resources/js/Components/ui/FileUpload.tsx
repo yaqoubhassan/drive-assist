@@ -77,18 +77,21 @@ export default function FileUpload({
         });
       }, 200);
 
-      const response = await fetch(route('expert.kyc.upload-document'), {
-        method: 'POST',
-        headers: {
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-        },
-        body: formData,
-      });
+      // Use axios instead of fetch - axios already has CSRF token configured in bootstrap.ts
+      const response = await window.axios.post(
+        route('expert.kyc.upload-document'),
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
 
       clearInterval(progressInterval);
       setUploadProgress(100);
 
-      const result = await response.json();
+      const result = response.data;
 
       if (result.success) {
         onUploadSuccess(result.path, result.url);
@@ -98,9 +101,15 @@ export default function FileUpload({
       } else {
         setError(result.error || 'Upload failed');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Upload error:', err);
-      setError('Failed to upload document. Please try again.');
+      // Better error handling for axios errors
+      const errorMessage =
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        err.message ||
+        'Failed to upload document. Please try again.';
+      setError(errorMessage);
     } finally {
       setIsUploading(false);
     }

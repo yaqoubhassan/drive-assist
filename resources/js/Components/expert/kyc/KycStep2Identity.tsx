@@ -1,6 +1,6 @@
-import React, { useState, useRef } from 'react';
-import { CloudArrowUpIcon, CheckCircleIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
+import FileUpload from '@/Components/ui/FileUpload';
 
 interface Props {
   data: any;
@@ -17,12 +17,6 @@ export default function KycStep2Identity({ data, updateData, nextStep, previousS
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isUploadingFront, setIsUploadingFront] = useState(false);
-  const [isUploadingBack, setIsUploadingBack] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-
-  const frontInputRef = useRef<HTMLInputElement>(null);
-  const backInputRef = useRef<HTMLInputElement>(null);
 
   const idTypes = [
     { value: 'drivers_license', label: "Driver's License", icon: '🚗' },
@@ -34,49 +28,6 @@ export default function KycStep2Identity({ data, updateData, nextStep, previousS
     setFormData((prev) => ({ ...prev, [field]: value }));
     setErrors((prev) => ({ ...prev, [field]: '' }));
     updateData({ [field]: value });
-  };
-
-  const handleFileUpload = async (file: File, side: 'front' | 'back') => {
-    const setUploading = side === 'front' ? setIsUploadingFront : setIsUploadingBack;
-    setUploading(true);
-    setUploadError(null);
-
-    const formData = new FormData();
-    formData.append('document_type', side === 'front' ? 'id_front' : 'id_back');
-    formData.append('file', file);
-
-    try {
-      const response = await fetch(route('expert.kyc.upload-document'), {
-        method: 'POST',
-        headers: {
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-        },
-        body: formData,
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        if (side === 'front') {
-          updateData({
-            id_document_front_path: result.path,
-            id_document_front_url: result.url,
-          });
-        } else {
-          updateData({
-            id_document_back_path: result.path,
-            id_document_back_url: result.url,
-          });
-        }
-      } else {
-        setUploadError(result.error || 'Upload failed');
-      }
-    } catch (error) {
-      setUploadError('Failed to upload document. Please try again.');
-      console.error('Upload error:', error);
-    } finally {
-      setUploading(false);
-    }
   };
 
   const validateStep = (): boolean => {
@@ -112,6 +63,7 @@ export default function KycStep2Identity({ data, updateData, nextStep, previousS
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div>
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
           Identity Verification
@@ -132,10 +84,13 @@ export default function KycStep2Identity({ data, updateData, nextStep, previousS
               key={type.value}
               type="button"
               onClick={() => handleInputChange('id_type', type.value)}
-              className={`p-4 border-2 rounded-lg transition-all text-center ${formData.id_type === type.value
-                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                : 'border-gray-300 dark:border-gray-600 hover:border-blue-300'
-                }`}
+              className={`
+                p-4 border-2 rounded-lg transition-all text-center
+                ${formData.id_type === type.value
+                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                  : 'border-gray-300 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500'
+                }
+              `}
             >
               <div className="text-3xl mb-2">{type.icon}</div>
               <div className="font-medium text-gray-900 dark:text-white">
@@ -165,8 +120,19 @@ export default function KycStep2Identity({ data, updateData, nextStep, previousS
             type="text"
             value={formData.id_number}
             onChange={(e) => handleInputChange('id_number', e.target.value)}
-            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white ${errors.id_number ? 'border-red-500' : 'border-gray-300'
-              }`}
+            className={`
+              w-full px-4 py-3 
+              border-2 rounded-lg 
+              bg-white dark:bg-gray-800
+              text-gray-900 dark:text-white
+              placeholder-gray-400 dark:placeholder-gray-500
+              focus:ring-2 focus:ring-blue-500 focus:border-transparent 
+              transition-all duration-200
+              ${errors.id_number
+                ? 'border-red-300 dark:border-red-600'
+                : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+              }
+            `}
             placeholder={
               formData.id_type === 'passport'
                 ? 'e.g., A12345678'
@@ -190,91 +156,38 @@ export default function KycStep2Identity({ data, updateData, nextStep, previousS
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.1 }}
         >
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            {formData.id_type === 'passport' ? 'Passport Photo Page' : 'Front of ID'} *
-          </label>
-
-          {!data.id_document_front_url ? (
-            <div
-              onClick={() => frontInputRef.current?.click()}
-              className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${errors.front
-                ? 'border-red-300 dark:border-red-600'
-                : 'border-gray-300 dark:border-gray-600 hover:border-blue-500'
-                }`}
-            >
-              <input
-                ref={frontInputRef}
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleFileUpload(file, 'front');
-                }}
-                className="hidden"
-              />
-
-              {isUploadingFront ? (
-                <div className="space-y-3">
-                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mx-auto" />
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Uploading...
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <CloudArrowUpIcon className="mx-auto h-12 w-12 text-gray-400 mb-3" />
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                    <span className="font-semibold text-blue-600 dark:text-blue-400">
-                      Click to upload
-                    </span>{' '}
-                    or drag and drop
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    PDF, JPG, or PNG (max 5MB)
-                  </p>
-                </>
-              )}
-            </div>
-          ) : (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <CheckCircleIcon className="h-6 w-6 text-green-600 dark:text-green-400" />
-                  <div>
-                    <p className="text-sm font-medium text-green-800 dark:text-green-200">
-                      Document uploaded successfully
-                    </p>
-                    <a
-                      href={data.id_document_front_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-green-600 dark:text-green-400 hover:underline"
-                    >
-                      View document
-                    </a>
-                  </div>
-                </div>
-                <button
-                  onClick={() => {
-                    updateData({
-                      id_document_front_path: null,
-                      id_document_front_url: null,
-                    });
-                  }}
-                  className="p-1 hover:bg-green-100 dark:hover:bg-green-900 rounded-full"
-                >
-                  <XMarkIcon className="h-5 w-5 text-green-600 dark:text-green-400" />
-                </button>
-              </div>
-            </motion.div>
-          )}
-
+          <FileUpload
+            label={formData.id_type === 'passport' ? 'Passport Photo Page *' : 'Front of ID *'}
+            description={`Upload ${formData.id_type === 'passport' ? 'the photo page of your passport' : 'the front of your ID'}`}
+            documentType="id_front"
+            currentFileUrl={data.id_document_front_url}
+            currentFilePath={data.id_document_front_path}
+            onUploadSuccess={(path, url) => {
+              updateData({
+                id_document_front_path: path,
+                id_document_front_url: url,
+              });
+              // Clear error when file is uploaded
+              setErrors((prev) => {
+                const newErrors = { ...prev };
+                delete newErrors.front;
+                return newErrors;
+              });
+            }}
+            onRemove={() => {
+              updateData({
+                id_document_front_path: null,
+                id_document_front_url: null,
+              });
+            }}
+            required
+            acceptedTypes=".pdf,.jpg,.jpeg,.png"
+            maxSizeMB={5}
+          />
           {errors.front && (
-            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.front}</p>
+            <p className="text-sm text-red-600 dark:text-red-400 -mt-4">
+              {errors.front}
+            </p>
           )}
         </motion.div>
       )}
@@ -286,105 +199,46 @@ export default function KycStep2Identity({ data, updateData, nextStep, previousS
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.2 }}
         >
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Back of ID *
-          </label>
-
-          {!data.id_document_back_url ? (
-            <div
-              onClick={() => backInputRef.current?.click()}
-              className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${errors.back
-                ? 'border-red-300 dark:border-red-600'
-                : 'border-gray-300 dark:border-gray-600 hover:border-blue-500'
-                }`}
-            >
-              <input
-                ref={backInputRef}
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleFileUpload(file, 'back');
-                }}
-                className="hidden"
-              />
-
-              {isUploadingBack ? (
-                <div className="space-y-3">
-                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mx-auto" />
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Uploading...
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <CloudArrowUpIcon className="mx-auto h-12 w-12 text-gray-400 mb-3" />
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                    <span className="font-semibold text-blue-600 dark:text-blue-400">
-                      Click to upload
-                    </span>{' '}
-                    or drag and drop
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    PDF, JPG, or PNG (max 5MB)
-                  </p>
-                </>
-              )}
-            </div>
-          ) : (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <CheckCircleIcon className="h-6 w-6 text-green-600 dark:text-green-400" />
-                  <div>
-                    <p className="text-sm font-medium text-green-800 dark:text-green-200">
-                      Document uploaded successfully
-                    </p>
-                    <a
-                      href={data.id_document_back_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-green-600 dark:text-green-400 hover:underline"
-                    >
-                      View document
-                    </a>
-                  </div>
-                </div>
-                <button
-                  onClick={() => {
-                    updateData({
-                      id_document_back_path: null,
-                      id_document_back_url: null,
-                    });
-                  }}
-                  className="p-1 hover:bg-green-100 dark:hover:bg-green-900 rounded-full"
-                >
-                  <XMarkIcon className="h-5 w-5 text-green-600 dark:text-green-400" />
-                </button>
-              </div>
-            </motion.div>
-          )}
-
+          <FileUpload
+            label="Back of ID *"
+            description="Upload the back of your ID document"
+            documentType="id_back"
+            currentFileUrl={data.id_document_back_url}
+            currentFilePath={data.id_document_back_path}
+            onUploadSuccess={(path, url) => {
+              updateData({
+                id_document_back_path: path,
+                id_document_back_url: url,
+              });
+              // Clear error when file is uploaded
+              setErrors((prev) => {
+                const newErrors = { ...prev };
+                delete newErrors.back;
+                return newErrors;
+              });
+            }}
+            onRemove={() => {
+              updateData({
+                id_document_back_path: null,
+                id_document_back_url: null,
+              });
+            }}
+            required
+            acceptedTypes=".pdf,.jpg,.jpeg,.png"
+            maxSizeMB={5}
+          />
           {errors.back && (
-            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.back}</p>
+            <p className="text-sm text-red-600 dark:text-red-400 -mt-4">
+              {errors.back}
+            </p>
           )}
         </motion.div>
-      )}
-
-      {uploadError && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-          <p className="text-sm text-red-800 dark:text-red-200">{uploadError}</p>
-        </div>
       )}
 
       {/* Info Box */}
       <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
         <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-200 mb-2">
-          Why do we need this?
+          📌 Why do we need this?
         </h4>
         <ul className="text-sm text-blue-800 dark:text-blue-300 space-y-1">
           <li>• Verify you are who you say you are</li>
@@ -401,7 +255,7 @@ export default function KycStep2Identity({ data, updateData, nextStep, previousS
       <div className="flex justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
         <button
           onClick={previousStep}
-          className="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center space-x-2"
+          className="px-6 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center space-x-2"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -410,9 +264,9 @@ export default function KycStep2Identity({ data, updateData, nextStep, previousS
         </button>
         <button
           onClick={handleNext}
-          className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors flex items-center space-x-2"
+          className="px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-semibold rounded-lg transition-colors flex items-center space-x-2 shadow-lg hover:shadow-xl"
         >
-          <span>Continue</span>
+          <span>Continue to Insurance Verification</span>
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
