@@ -113,25 +113,19 @@ class ExpertOnboardingController extends Controller
         }
     }
 
-    /**
-     * Save progress and allow user to continue later
-     * This logs out the user after saving
-     */
-    public function save(Request $request)
+    public function saveProgress(Request $request)
     {
         $user = auth()->user();
 
         // Ensure user is an expert
         if ($user->user_type !== 'expert') {
-            return redirect()->route('home')
-                ->with('error', 'Access denied.');
+            return back()->with('error', 'Access denied.');
         }
 
         $expertProfile = $user->expertProfile;
 
         if (!$expertProfile) {
-            return redirect()->route('expert.onboarding.index')
-                ->with('error', 'Profile not found. Please start over.');
+            return back()->with('error', 'Profile not found.');
         }
 
         // Validate only the fields that are provided (partial validation)
@@ -148,7 +142,6 @@ class ExpertOnboardingController extends Controller
             'service_radius_km' => 'nullable|integer|min:5|max:100',
             'specialties' => 'nullable|array',
             'specialties.*' => 'string|in:engine,brakes,electrical,transmission,tires,bodywork,diagnostics,maintenance,air_conditioning,suspension,exhaust',
-            // New fields for extended onboarding
             'employee_count' => 'nullable|integer|min:1|max:999',
             'hourly_rate_min' => 'nullable|numeric|min:0|max:9999.99',
             'hourly_rate_max' => 'nullable|numeric|min:0|max:9999.99',
@@ -245,15 +238,164 @@ class ExpertOnboardingController extends Controller
 
             DB::commit();
 
-            Log::info('Expert profile progress saved', [
+            Log::info('Expert profile progress auto-saved', [
                 'user_id' => $user->id,
                 'profile_id' => $expertProfile->id,
                 'current_step' => $validated['current_step'],
             ]);
 
-            // Log out the user after saving
-            Auth::logout();
+            // ✅ NO LOGOUT - Just return success
+            // User stays logged in and can continue onboarding
+            return back()->with('success', 'Progress saved automatically.');
+        } catch (\Exception $e) {
+            DB::rollBack();
 
+            Log::error('Failed to auto-save expert profile progress', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()
+                ->withInput()
+                ->with('error', 'Failed to save progress. Please try again.');
+        }
+    }
+
+    /**
+     * Save progress and allow user to continue later
+     * This logs out the user after saving
+     */
+    public function save(Request $request)
+    {
+        $user = auth()->user();
+
+        // Ensure user is an expert
+        if ($user->user_type !== 'expert') {
+            return redirect()->route('home')
+                ->with('error', 'Access denied.');
+        }
+
+        $expertProfile = $user->expertProfile;
+
+        if (!$expertProfile) {
+            return redirect()->route('expert.onboarding.index')
+                ->with('error', 'Profile not found. Please start over.');
+        }
+
+        // Validate (same validation as saveProgress)
+        $validated = $request->validate([
+            'current_step' => 'required|integer|min:1|max:5',
+            'phone' => 'nullable|string|max:20',
+            'business_name' => 'nullable|string|max:255',
+            'business_type' => 'nullable|in:mechanic,electrician,body_shop,mobile_mechanic,other',
+            'bio' => 'nullable|string|max:1000',
+            'years_experience' => 'nullable|integer|min:0|max:99',
+            'business_address' => 'nullable|string|max:500',
+            'location_latitude' => 'nullable|numeric|between:-90,90',
+            'location_longitude' => 'nullable|numeric|between:-180,180',
+            'service_radius_km' => 'nullable|integer|min:5|max:100',
+            'specialties' => 'nullable|array',
+            'specialties.*' => 'string|in:engine,brakes,electrical,transmission,tires,bodywork,diagnostics,maintenance,air_conditioning,suspension,exhaust',
+            'employee_count' => 'nullable|integer|min:1|max:999',
+            'hourly_rate_min' => 'nullable|numeric|min:0|max:9999.99',
+            'hourly_rate_max' => 'nullable|numeric|min:0|max:9999.99',
+            'diagnostic_fee' => 'nullable|numeric|min:0|max:9999.99',
+            'accepts_emergency' => 'nullable|boolean',
+            'monday_open' => 'nullable|date_format:H:i',
+            'monday_close' => 'nullable|date_format:H:i',
+            'tuesday_open' => 'nullable|date_format:H:i',
+            'tuesday_close' => 'nullable|date_format:H:i',
+            'wednesday_open' => 'nullable|date_format:H:i',
+            'wednesday_close' => 'nullable|date_format:H:i',
+            'thursday_open' => 'nullable|date_format:H:i',
+            'thursday_close' => 'nullable|date_format:H:i',
+            'friday_open' => 'nullable|date_format:H:i',
+            'friday_close' => 'nullable|date_format:H:i',
+            'saturday_open' => 'nullable|date_format:H:i',
+            'saturday_close' => 'nullable|date_format:H:i',
+            'sunday_open' => 'nullable|date_format:H:i',
+            'sunday_close' => 'nullable|date_format:H:i',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            // Same save logic as saveProgress()
+            // Update user phone
+            if (isset($validated['phone']) && $validated['phone']) {
+                $user->update(['phone' => $validated['phone']]);
+            }
+
+            // Update user location
+            if (isset($validated['business_address']) && $validated['business_address']) {
+                $user->update([
+                    'location_address' => $validated['business_address'],
+                    'location_latitude' => $validated['location_latitude'] ?? $user->location_latitude,
+                    'location_longitude' => $validated['location_longitude'] ?? $user->location_longitude,
+                ]);
+            }
+
+            // Update expert profile
+            $profileData = [];
+            if (isset($validated['business_name'])) $profileData['business_name'] = $validated['business_name'];
+            if (isset($validated['business_type'])) $profileData['business_type'] = $validated['business_type'];
+            if (isset($validated['bio'])) $profileData['bio'] = $validated['bio'];
+            if (isset($validated['years_experience'])) $profileData['years_experience'] = $validated['years_experience'];
+            if (isset($validated['service_radius_km'])) $profileData['service_radius_km'] = $validated['service_radius_km'];
+            if (isset($validated['employee_count'])) $profileData['employee_count'] = $validated['employee_count'];
+            if (isset($validated['hourly_rate_min'])) $profileData['hourly_rate_min'] = $validated['hourly_rate_min'];
+            if (isset($validated['hourly_rate_max'])) $profileData['hourly_rate_max'] = $validated['hourly_rate_max'];
+            if (isset($validated['diagnostic_fee'])) $profileData['diagnostic_fee'] = $validated['diagnostic_fee'];
+            if (isset($validated['accepts_emergency'])) $profileData['accepts_emergency'] = $validated['accepts_emergency'];
+
+            // Operating hours
+            $hoursFields = [
+                'monday_open',
+                'monday_close',
+                'tuesday_open',
+                'tuesday_close',
+                'wednesday_open',
+                'wednesday_close',
+                'thursday_open',
+                'thursday_close',
+                'friday_open',
+                'friday_close',
+                'saturday_open',
+                'saturday_close',
+                'sunday_open',
+                'sunday_close',
+            ];
+
+            foreach ($hoursFields as $field) {
+                if (isset($validated[$field])) {
+                    $profileData[$field] = $validated[$field];
+                }
+            }
+
+            // Save current step
+            $profileData['current_onboarding_step'] = $validated['current_step'];
+
+            if (!empty($profileData)) {
+                $expertProfile->update($profileData);
+            }
+
+            // Update specialties
+            if (isset($validated['specialties']) && is_array($validated['specialties'])) {
+                $expertProfile->specialties()->delete();
+                foreach ($validated['specialties'] as $specialty) {
+                    $expertProfile->specialties()->create(['specialty' => $specialty]);
+                }
+            }
+
+            DB::commit();
+
+            Log::info('Expert profile saved with logout', [
+                'user_id' => $user->id,
+                'profile_id' => $expertProfile->id,
+                'current_step' => $validated['current_step'],
+            ]);
+
+            // ✅ NOW logout (only for "Save & Exit")
+            Auth::logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
@@ -262,7 +404,7 @@ class ExpertOnboardingController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
 
-            Log::error('Failed to save expert profile progress', [
+            Log::error('Failed to save expert profile with logout', [
                 'user_id' => $user->id,
                 'error' => $e->getMessage(),
             ]);

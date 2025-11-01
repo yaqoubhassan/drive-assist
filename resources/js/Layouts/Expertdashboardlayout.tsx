@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { Link, router, usePage } from '@inertiajs/react';
 import { PageProps as InertiaPageProps } from '@inertiajs/core';
 import { motion, AnimatePresence } from 'framer-motion';
+import { clearBrowserSession } from '@/utils/sessionHelper';
 import { useState } from 'react';
 import {
   HomeIcon,
@@ -61,7 +62,11 @@ export default function ExpertDashboardLayout({ children, title }: ExpertDashboa
   ];
 
   const logout = () => {
-    router.post(route('logout'));
+    router.post(route('logout'), {}, {
+      onSuccess: () => {
+        clearBrowserSession();
+      },
+    });
   };
 
   return (

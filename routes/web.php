@@ -299,7 +299,7 @@ Route::prefix('driver')->name('driver.')->middleware(['auth', 'driver'])->group(
 |
 */
 
-Route::prefix('expert')->name('expert.')->middleware(['auth', 'expert'])->group(function () {
+Route::prefix('expert')->name('expert.')->middleware(['auth', 'expert', 'verified'])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
@@ -310,6 +310,7 @@ Route::prefix('expert')->name('expert.')->middleware(['auth', 'expert'])->group(
     */
     Route::prefix('onboarding')->name('onboarding.')->group(function () {
         Route::get('/', [ExpertOnboardingController::class, 'index'])->name('index');
+        Route::post('/save-progress', [ExpertOnboardingController::class, 'saveProgress'])->name('save-progress');
         Route::post('/save', [ExpertOnboardingController::class, 'save'])->name('save');
         Route::post('/complete', [ExpertOnboardingController::class, 'complete'])->name('complete');
     });

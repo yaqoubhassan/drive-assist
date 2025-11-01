@@ -1,4 +1,5 @@
 // resources/js/Components/expert/onboarding/PricingStep.tsx
+// ✅ FIXED: Skip button now only updates local state without backend save
 import { motion } from 'framer-motion';
 import { InformationCircleIcon } from '@heroicons/react/24/outline';
 import type { ExpertData } from '@/types/expert-onboarding';
@@ -7,6 +8,8 @@ interface PricingStepProps {
   data: ExpertData;
   setData: (updates: Partial<ExpertData>) => void;
   errors: Partial<Record<keyof ExpertData, string>>;
+  // ✅ NEW: Add onStepChange to update step without backend save
+  onStepChange?: (step: number) => void;
   nextStep: () => void;
   previousStep: () => void;
 }
@@ -15,6 +18,7 @@ export default function PricingStep({
   data,
   setData,
   errors,
+  onStepChange,
   nextStep,
   previousStep,
 }: PricingStepProps) {
@@ -23,6 +27,17 @@ export default function PricingStep({
     data.hourly_rate_max ||
     data.diagnostic_fee
   );
+
+  // ✅ Handle skip - only update local state, no backend save
+  const handleSkip = () => {
+    if (onStepChange) {
+      // Use the new prop to update step without backend save
+      onStepChange(5);
+    } else {
+      // Fallback to nextStep if onStepChange not provided
+      nextStep();
+    }
+  };
 
   return (
     <motion.div
@@ -169,12 +184,47 @@ export default function PricingStep({
         )}
       </div>
 
-      {/* Skip Button */}
+      {/* Accept Emergency Calls Section */}
+      <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          Emergency Service
+        </h3>
+        <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+          <div className="flex-1">
+            <p className="font-medium text-gray-900 dark:text-white mb-1">
+              Accept Emergency Calls
+            </p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Available for urgent after-hours service
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() =>
+              setData({ accepts_emergency: !data.accepts_emergency })
+            }
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${data.accepts_emergency
+              ? 'bg-blue-600 dark:bg-blue-500'
+              : 'bg-gray-300 dark:bg-gray-600'
+              }`}
+            role="switch"
+            aria-checked={data.accepts_emergency}
+            aria-label="Accept emergency calls"
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${data.accepts_emergency ? 'translate-x-6' : 'translate-x-1'
+                }`}
+            />
+          </button>
+        </div>
+      </div>
+
+      {/* ✅ FIXED: Skip Button - Now uses handleSkip which only updates local state */}
       <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <button
             type="button"
-            onClick={nextStep}
+            onClick={handleSkip}
             className="group relative px-6 py-2.5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium transition-colors"
           >
             <span className="relative flex items-center gap-2">

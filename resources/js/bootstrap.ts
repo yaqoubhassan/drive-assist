@@ -1,48 +1,46 @@
-/**
- * We'll load the axios HTTP library which allows us to easily issue requests
- * to our Laravel back-end. This library automatically handles sending the
- * CSRF token as a header based on the value of the "XSRF" token cookie.
- */
-
 import axios from 'axios';
 window.axios = axios;
 
 window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 
-/**
- * CSRF Token Configuration
- * Laravel automatically sets a CSRF token in a meta tag and as a cookie.
- * We need to read it and include it in all axios requests.
- */
-
-// Get CSRF token from meta tag
-const token = document.head.querySelector('meta[name="csrf-token"]');
-
-if (token) {
-  window.axios.defaults.headers.common['X-CSRF-TOKEN'] = token.getAttribute('content');
-  console.log('✅ CSRF token configured for axios');
-} else {
-  console.error('❌ CSRF token not found: https://laravel.com/docs/csrf#csrf-x-csrf-token');
+// Function to get fresh CSRF token
+function getCsrfToken(): string | null {
+  const token = document.head.querySelector('meta[name="csrf-token"]');
+  return token ? token.getAttribute('content') : null;
 }
 
-/**
- * Echo exposes an expressive API for subscribing to channels and listening
- * for events that are broadcast by Laravel. Echo and event broadcasting
- * allows your team to easily build robust real-time web applications.
- */
+// Set initial CSRF token
+const initialToken = getCsrfToken();
+if (initialToken) {
+  window.axios.defaults.headers.common['X-CSRF-TOKEN'] = initialToken;
+  console.log('✅ CSRF token configured for axios');
+} else {
+  console.error('❌ CSRF token not found');
+}
 
-// import Echo from 'laravel-echo';
+// Refresh token before each request
+window.axios.interceptors.request.use(
+  (config) => {
+    const freshToken = getCsrfToken();
+    if (freshToken) {
+      config.headers['X-CSRF-TOKEN'] = freshToken;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
-// import Pusher from 'pusher-js';
-// window.Pusher = Pusher;
-
-// window.Echo = new Echo({
-//     broadcaster: 'pusher',
-//     key: import.meta.env.VITE_PUSHER_APP_KEY,
-//     cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER ?? 'mt1',
-//     wsHost: import.meta.env.VITE_PUSHER_HOST ? import.meta.env.VITE_PUSHER_HOST : `ws-${import.meta.env.VITE_PUSHER_APP_CLUSTER}.pusher.com`,
-//     wsPort: import.meta.env.VITE_PUSHER_PORT ?? 80,
-//     wssPort: import.meta.env.VITE_PUSHER_PORT ?? 443,
-//     forceTLS: (import.meta.env.VITE_PUSHER_SCHEME ?? 'https') === 'https',
-//     enabledTransports: ['ws', 'wss'],
-// });
+// Handle 419 errors and force reload
+window.axios.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    if (error.response?.status === 419 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      console.warn('⚠️ CSRF token mismatch (419), refreshing page...');
+      window.location.reload();
+      return Promise.reject(error);
+    }
+    return Promise.reject(error);
+  }
+);

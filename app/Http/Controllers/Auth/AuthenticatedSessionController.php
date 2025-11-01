@@ -8,6 +8,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Session;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -40,15 +41,23 @@ class AuthenticatedSessionController extends Controller
     /**
      * Destroy an authenticated session.
      */
+
     public function destroy(Request $request): RedirectResponse
     {
         Auth::guard('web')->logout();
-
         $request->session()->invalidate();
-
         $request->session()->regenerateToken();
 
-        return redirect()->route('home');
+        // Clear all session data
+        Session::flush();
+
+        $response = redirect()->route('home');
+        $response->withCookie(cookie()->forget(config('session.cookie')));
+        $response->header('Cache-Control', 'no-cache, no-store, must-revalidate');
+        $response->header('Pragma', 'no-cache');
+        $response->header('Expires', '0');
+
+        return $response;
     }
 
     /**

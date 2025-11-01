@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, router } from '@inertiajs/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   PhoneIcon,
@@ -124,14 +124,11 @@ export default function Onboarding({
 
   // Navigate to a specific step
   const goToStep = (step: number) => {
-    // Allow backward navigation, prevent jumping ahead more than one step
     if (step > currentStep + 1) {
-      console.log('Cannot jump ahead more than one step');
       return;
     }
-
     setCurrentStep(step);
-    saveProgress(step);
+    saveProgress(step); // ✅ Auto-saves without logout
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -140,7 +137,7 @@ export default function Onboarding({
     if (currentStep < 5) {
       const next = currentStep + 1;
       setCurrentStep(next);
-      saveProgress(next);
+      saveProgress(next); // ✅ Auto-saves without logout
     }
   };
 
@@ -150,35 +147,82 @@ export default function Onboarding({
     }
   };
 
-  // Save progress
+  // ✅ FIX: Save progress using Inertia router for proper CSRF handling
   const saveProgress = async (step?: number) => {
+    if (isSaving || processing) {
+      return;
+    }
+
     setIsSaving(true);
 
-    // Update current_step in form data first
     const updatedData = {
       ...data,
       current_step: step || currentStep,
     };
 
-    // Update form state
-    Object.entries(updatedData).forEach(([key, value]) => {
-      setData(key as keyof ExpertData, value);
-    });
+    console.log('💾 Auto-saving progress for step:', step || currentStep);
 
-    try {
-      post(route('expert.onboarding.save'), {
+    // ✅ Use save-progress endpoint (doesn't logout)
+    router.post(
+      route('expert.onboarding.save-progress'), // ✅ Changed route
+      updatedData,
+      {
         preserveScroll: true,
+        preserveState: true, // ✅ Changed to true - we're NOT logging out
         onSuccess: () => {
+          console.log('✅ Progress auto-saved');
           setIsSaving(false);
         },
-        onError: () => {
+        onError: (errors) => {
+          console.error('❌ Failed to save progress:', errors);
           setIsSaving(false);
         },
-      });
-    } catch (error) {
-      console.error('Failed to save progress:', error);
-      setIsSaving(false);
+        onFinish: () => {
+          setIsSaving(false);
+        },
+      }
+    );
+  };
+
+  // ✅ FIX: Handle "Save & Exit" button click - explicit save with logout
+  const handleSaveAndExit = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (isSaving || processing) {
+      return;
     }
+
+    console.log('🚪 Save & Exit clicked - saving and logging out...');
+    setIsSaving(true);
+
+    const dataToSave = {
+      ...data,
+      current_step: currentStep,
+    };
+
+    // ✅ Use save endpoint (logs out)
+    router.post(
+      route('expert.onboarding.save'), // ✅ Different route
+      dataToSave,
+      {
+        preserveScroll: false,
+        preserveState: false, // ✅ false because we're logging out
+        replace: true,
+        onSuccess: () => {
+          console.log('✅ Save & Exit successful');
+          sessionStorage.clear();
+        },
+        onError: (errors) => {
+          console.error('❌ Save & Exit failed:', errors);
+          setIsSaving(false);
+          alert('Failed to save progress. Please try again.');
+        },
+        onFinish: () => {
+          setIsSaving(false);
+        },
+      }
+    );
   };
 
   // Form submission - ONLY for step 5 completion
@@ -190,6 +234,12 @@ export default function Onboarding({
     }
 
     post(route('expert.onboarding.complete'));
+  };
+
+  const handleStepChange = (step: number) => {
+    console.log('📍 Changing step locally (no save):', step);
+    setCurrentStep(step);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Render current step component
@@ -210,7 +260,7 @@ export default function Onboarding({
       case 3:
         return <ServicesStep {...stepProps} availableSpecialties={availableSpecialties} />;
       case 4:
-        return <PricingStep {...stepProps} />;
+        return <PricingStep {...stepProps} onStepChange={handleStepChange} />;
       case 5:
         return <OperatingHoursStep {...stepProps} />;
       default:
@@ -492,30 +542,57 @@ export default function Onboarding({
                   {/* Navigation Buttons */}
                   <div className="px-6 sm:px-8 pb-6 sm:pb-8">
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                      {/* Save & Exit - Left */}
+                      {/* ✅ UPDATED: Save & Exit - Now uses handleSaveAndExit */}
                       <motion.button
                         type="button"
-                        onClick={() => saveProgress()}
+                        onClick={handleSaveAndExit}
                         disabled={processing || isSaving}
                         whileHover={{ scale: processing || isSaving ? 1 : 1.02 }}
                         whileTap={{ scale: processing || isSaving ? 1 : 0.98 }}
                         className="group relative px-5 py-3 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-xl hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <div className="flex items-center justify-center gap-2">
-                          <svg
-                            className="w-5 h-5"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M5 13l4 4L19 7"
-                            />
-                          </svg>
-                          <span>Save Progress</span>
+                          {isSaving ? (
+                            <>
+                              <svg
+                                className="animate-spin h-5 w-5"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                              >
+                                <circle
+                                  className="opacity-25"
+                                  cx="12"
+                                  cy="12"
+                                  r="10"
+                                  stroke="currentColor"
+                                  strokeWidth="4"
+                                />
+                                <path
+                                  className="opacity-75"
+                                  fill="currentColor"
+                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                />
+                              </svg>
+                              <span>Saving...</span>
+                            </>
+                          ) : (
+                            <>
+                              <svg
+                                className="w-5 h-5"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                                />
+                              </svg>
+                              <span>Save & Exit</span>
+                            </>
+                          )}
                         </div>
                       </motion.button>
 
