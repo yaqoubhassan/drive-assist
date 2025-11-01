@@ -423,6 +423,42 @@ class ExpertDashboardController extends Controller
 
         DB::beginTransaction();
         try {
+            // Clean the input data
+            $inputData = $request->all();
+            $timeFields = [
+                'monday_open',
+                'monday_close',
+                'tuesday_open',
+                'tuesday_close',
+                'wednesday_open',
+                'wednesday_close',
+                'thursday_open',
+                'thursday_close',
+                'friday_open',
+                'friday_close',
+                'saturday_open',
+                'saturday_close',
+                'sunday_open',
+                'sunday_close',
+            ];
+
+            foreach ($timeFields as $field) {
+                if (isset($inputData[$field])) {
+                    // Convert empty string to null
+                    if ($inputData[$field] === '') {
+                        $inputData[$field] = null;
+                    }
+                    // Convert HH:MM:SS to HH:MM (trim seconds if present)
+                    else if (is_string($inputData[$field]) && strlen($inputData[$field]) > 5) {
+                        // Remove seconds if present (e.g., "09:00:00" -> "09:00")
+                        $inputData[$field] = substr($inputData[$field], 0, 5);
+                    }
+                }
+            }
+
+            // Replace the request input with cleaned data
+            $request->merge($inputData);
+
             // Validate based on what's being updated
             $validated = $request->validate([
                 // User fields
@@ -514,12 +550,23 @@ class ExpertDashboardController extends Controller
 
             DB::commit();
 
-            Log::info('Expert profile updated', [
+            Log::info('Expert profile updated successfully', [
                 'user_id' => $user->id,
                 'profile_id' => $expertProfile->id,
+                'updated_fields' => array_keys($validated),
             ]);
 
             return back()->with('success', 'Profile updated successfully.');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+
+            Log::warning('Expert profile validation failed', [
+                'user_id' => $user->id,
+                'errors' => $e->errors(),
+                'input_data' => $request->all(),
+            ]);
+
+            throw $e;
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -531,116 +578,5 @@ class ExpertDashboardController extends Controller
 
             return back()->withErrors(['error' => 'Failed to update profile. Please try again.']);
         }
-    }
-
-    /**
-     * Display business settings page
-     */
-    public function businessSettings(): Response
-    {
-        return Inertia::render('Expert/Settings/Business', [
-            'expertProfile' => auth()->user()->expertProfile,
-        ]);
-    }
-
-    /**
-     * Update business settings
-     */
-    public function updateBusinessSettings(Request $request)
-    {
-        $expertProfile = auth()->user()->expertProfile;
-
-        $validated = $request->validate([
-            'business_name' => 'required|string|max:255',
-            'bio' => 'nullable|string|max:1000',
-            'years_experience' => 'nullable|integer|min:0',
-            'employee_count' => 'nullable|integer|min:1',
-            'service_radius_km' => 'required|integer|min:1|max:100',
-        ]);
-
-        $expertProfile->update($validated);
-
-        return back()->with('success', 'Business settings updated successfully.');
-    }
-
-    /**
-     * Display availability settings page
-     */
-    public function availabilitySettings(): Response
-    {
-        return Inertia::render('Expert/Settings/Availability', [
-            'expertProfile' => auth()->user()->expertProfile,
-        ]);
-    }
-
-    /**
-     * Update availability
-     */
-    public function updateAvailability(Request $request)
-    {
-        $expertProfile = auth()->user()->expertProfile;
-
-        $validated = $request->validate([
-            'monday_open' => 'nullable|date_format:H:i',
-            'monday_close' => 'nullable|date_format:H:i',
-            'tuesday_open' => 'nullable|date_format:H:i',
-            'tuesday_close' => 'nullable|date_format:H:i',
-            'wednesday_open' => 'nullable|date_format:H:i',
-            'wednesday_close' => 'nullable|date_format:H:i',
-            'thursday_open' => 'nullable|date_format:H:i',
-            'thursday_close' => 'nullable|date_format:H:i',
-            'friday_open' => 'nullable|date_format:H:i',
-            'friday_close' => 'nullable|date_format:H:i',
-            'saturday_open' => 'nullable|date_format:H:i',
-            'saturday_close' => 'nullable|date_format:H:i',
-            'sunday_open' => 'nullable|date_format:H:i',
-            'sunday_close' => 'nullable|date_format:H:i',
-            'accepts_emergency' => 'boolean',
-        ]);
-
-        $expertProfile->update($validated);
-
-        return back()->with('success', 'Availability updated successfully.');
-    }
-
-    /**
-     * Display services settings page
-     */
-    public function servicesSettings(): Response
-    {
-        return Inertia::render('Expert/Settings/Services', [
-            'expertProfile' => auth()->user()->expertProfile->load('specialties'),
-        ]);
-    }
-
-    /**
-     * Update services
-     */
-    public function updateServices(Request $request)
-    {
-        $expertProfile = auth()->user()->expertProfile;
-
-        $validated = $request->validate([
-            'specialties' => 'required|array|min:1',
-            'specialties.*' => 'in:engine,brakes,electrical,transmission,tires,bodywork,diagnostics,maintenance,air_conditioning,suspension,exhaust',
-            'hourly_rate_min' => 'nullable|numeric|min:0',
-            'hourly_rate_max' => 'nullable|numeric|min:0',
-            'diagnostic_fee' => 'nullable|numeric|min:0',
-        ]);
-
-        // Update basic info
-        $expertProfile->update([
-            'hourly_rate_min' => $validated['hourly_rate_min'] ?? null,
-            'hourly_rate_max' => $validated['hourly_rate_max'] ?? null,
-            'diagnostic_fee' => $validated['diagnostic_fee'] ?? null,
-        ]);
-
-        // Sync specialties
-        $expertProfile->specialties()->delete();
-        foreach ($validated['specialties'] as $specialty) {
-            $expertProfile->specialties()->create(['specialty' => $specialty]);
-        }
-
-        return back()->with('success', 'Services updated successfully.');
     }
 }

@@ -449,18 +449,6 @@ Route::prefix('expert')->name('expert.')->middleware(['auth', 'expert', 'verifie
         Route::get('/profile', [ExpertDashboardController::class, 'profile'])->name('profile.edit');
         Route::put('/profile', [ExpertDashboardController::class, 'updateProfile'])->name('profile.update');
 
-        // Business Hours and Availability
-        Route::get('/availability', [ExpertDashboardController::class, 'availability'])->name('availability.edit');
-        Route::put('/availability', [ExpertDashboardController::class, 'updateAvailability'])->name('availability.update');
-
-        // Services and Specialties
-        Route::get('/services', [ExpertDashboardController::class, 'services'])->name('services.edit');
-        Route::put('/services', [ExpertDashboardController::class, 'updateServices'])->name('services.update');
-
-        // Pricing Settings
-        Route::get('/pricing', [ExpertDashboardController::class, 'pricing'])->name('pricing.edit');
-        Route::put('/pricing', [ExpertDashboardController::class, 'updatePricing'])->name('pricing.update');
-
         // Gallery Management (shop photos, work examples)
         Route::post('/gallery/upload', [ExpertDashboardController::class, 'uploadGalleryImage'])->name('gallery.upload');
         Route::delete('/gallery/{image}', [ExpertDashboardController::class, 'deleteGalleryImage'])->name('gallery.delete');

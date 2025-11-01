@@ -114,6 +114,13 @@ const daysOfWeek = [
   { key: 'sunday', label: 'Sunday' },
 ];
 
+const formatTimeForInput = (time: string | null): string => {
+  if (!time) return '';
+  // If time is in HH:MM:SS format, trim to HH:MM (take first 5 characters)
+  // If already in HH:MM format, this has no effect
+  return time.substring(0, 5);
+};
+
 export default function EditProfile({ user, expertProfile }: Props) {
   const [activeSection, setActiveSection] = useState<Section>('personal');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -135,21 +142,20 @@ export default function EditProfile({ user, expertProfile }: Props) {
     service_radius_km: expertProfile.service_radius_km || 25,
 
     // Operating hours
-    monday_open: expertProfile.monday_open || '',
-    monday_close: expertProfile.monday_close || '',
-    tuesday_open: expertProfile.tuesday_open || '',
-    tuesday_close: expertProfile.tuesday_close || '',
-    wednesday_open: expertProfile.wednesday_open || '',
-    wednesday_close: expertProfile.wednesday_close || '',
-    thursday_open: expertProfile.thursday_open || '',
-    thursday_close: expertProfile.thursday_close || '',
-    friday_open: expertProfile.friday_open || '',
-    friday_close: expertProfile.friday_close || '',
-    saturday_open: expertProfile.saturday_open || '',
-    saturday_close: expertProfile.saturday_close || '',
-    sunday_open: expertProfile.sunday_open || '',
-    sunday_close: expertProfile.sunday_close || '',
-
+    monday_open: formatTimeForInput(expertProfile.monday_open),
+    monday_close: formatTimeForInput(expertProfile.monday_close),
+    tuesday_open: formatTimeForInput(expertProfile.tuesday_open),
+    tuesday_close: formatTimeForInput(expertProfile.tuesday_close),
+    wednesday_open: formatTimeForInput(expertProfile.wednesday_open),
+    wednesday_close: formatTimeForInput(expertProfile.wednesday_close),
+    thursday_open: formatTimeForInput(expertProfile.thursday_open),
+    thursday_close: formatTimeForInput(expertProfile.thursday_close),
+    friday_open: formatTimeForInput(expertProfile.friday_open),
+    friday_close: formatTimeForInput(expertProfile.friday_close),
+    saturday_open: formatTimeForInput(expertProfile.saturday_open),
+    saturday_close: formatTimeForInput(expertProfile.saturday_close),
+    sunday_open: formatTimeForInput(expertProfile.sunday_open),
+    sunday_close: formatTimeForInput(expertProfile.sunday_close),
     // Services & Specialties
     specialties: expertProfile.specialties || [],
 
