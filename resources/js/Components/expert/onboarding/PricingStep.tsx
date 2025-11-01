@@ -1,5 +1,6 @@
 // resources/js/Components/expert/onboarding/PricingStep.tsx
-// ✅ FIXED: Skip button now only updates local state without backend save
+// ✅ FIXED: Skip button now properly advances to next step without backend save
+
 import { motion } from 'framer-motion';
 import { InformationCircleIcon } from '@heroicons/react/24/outline';
 import type { ExpertData } from '@/types/expert-onboarding';
@@ -8,8 +9,7 @@ interface PricingStepProps {
   data: ExpertData;
   setData: (updates: Partial<ExpertData>) => void;
   errors: Partial<Record<keyof ExpertData, string>>;
-  // ✅ NEW: Add onStepChange to update step without backend save
-  onStepChange?: (step: number) => void;
+  onStepChange?: (step: number) => void; // ✅ NEW: For local step changes without backend save
   nextStep: () => void;
   previousStep: () => void;
 }
@@ -28,11 +28,11 @@ export default function PricingStep({
     data.diagnostic_fee
   );
 
-  // ✅ Handle skip - only update local state, no backend save
+  // ✅ Handle skip - uses onStepChange to move forward without backend save
   const handleSkip = () => {
+    console.log('⏭️ Skipping pricing step');
     if (onStepChange) {
-      // Use the new prop to update step without backend save
-      onStepChange(5);
+      onStepChange(5); // Move to step 5 (Operating Hours) locally only
     } else {
       // Fallback to nextStep if onStepChange not provided
       nextStep();
@@ -74,31 +74,30 @@ export default function PricingStep({
       </div>
 
       {/* Hourly Rate Range */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
           Hourly Rate Range
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Minimum Rate */}
           <div>
-            <label
-              htmlFor="hourly_rate_min"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-            >
-              Minimum Rate (GH₵/hour)
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Minimum Rate ($/hour)
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">
-                GH₵
-              </span>
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <span className="text-gray-500 dark:text-gray-400 text-lg">$</span>
+              </div>
               <input
-                id="hourly_rate_min"
                 type="number"
-                min="0"
                 step="0.01"
+                min="0"
                 value={data.hourly_rate_min || ''}
                 onChange={(e) =>
                   setData({
-                    hourly_rate_min: e.target.value ? parseFloat(e.target.value) : null,
+                    hourly_rate_min: e.target.value
+                      ? parseFloat(e.target.value)
+                      : null,
                   })
                 }
                 className="w-full pl-12 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
@@ -112,30 +111,29 @@ export default function PricingStep({
             )}
           </div>
 
+          {/* Maximum Rate */}
           <div>
-            <label
-              htmlFor="hourly_rate_max"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-            >
-              Maximum Rate (GH₵/hour)
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Maximum Rate ($/hour)
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">
-                GH₵
-              </span>
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <span className="text-gray-500 dark:text-gray-400 text-lg">$</span>
+              </div>
               <input
-                id="hourly_rate_max"
                 type="number"
-                min="0"
                 step="0.01"
+                min="0"
                 value={data.hourly_rate_max || ''}
                 onChange={(e) =>
                   setData({
-                    hourly_rate_max: e.target.value ? parseFloat(e.target.value) : null,
+                    hourly_rate_max: e.target.value
+                      ? parseFloat(e.target.value)
+                      : null,
                   })
                 }
                 className="w-full pl-12 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                placeholder="150.00"
+                placeholder="100.00"
               />
             </div>
             {errors.hourly_rate_max && (
@@ -145,32 +143,33 @@ export default function PricingStep({
             )}
           </div>
         </div>
+        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+          💡 Tip: Provide a range to give customers flexibility while ensuring fair compensation.
+        </p>
       </div>
 
       {/* Diagnostic Fee */}
       <div>
-        <label
-          htmlFor="diagnostic_fee"
-          className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-        >
-          Diagnostic Fee (GH₵)
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Diagnostic Fee (optional)
         </label>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-          One-time fee for diagnosing vehicle issues
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+          One-time fee for initial inspection and diagnosis
         </p>
         <div className="relative max-w-xs">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">
-            GH₵
-          </span>
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <span className="text-gray-500 dark:text-gray-400 text-lg">$</span>
+          </div>
           <input
-            id="diagnostic_fee"
             type="number"
-            min="0"
             step="0.01"
+            min="0"
             value={data.diagnostic_fee || ''}
             onChange={(e) =>
               setData({
-                diagnostic_fee: e.target.value ? parseFloat(e.target.value) : null,
+                diagnostic_fee: e.target.value
+                  ? parseFloat(e.target.value)
+                  : null,
               })
             }
             className="w-full pl-12 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
@@ -230,26 +229,21 @@ export default function PricingStep({
             <span className="relative flex items-center gap-2">
               {hasAnyPricing ? (
                 <>
-                  <span>Continue without completing</span>
+                  Continue
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </>
               ) : (
                 <>
-                  <span>Skip this step for now</span>
+                  Skip this step for now
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                   </svg>
                 </>
               )}
             </span>
-            <span className="absolute bottom-0 left-0 w-full h-0.5 bg-gray-300 dark:bg-gray-600 scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
           </button>
-
-          <span className="text-sm text-gray-400 dark:text-gray-500">
-            You can update this later
-          </span>
         </div>
       </div>
     </motion.div>
