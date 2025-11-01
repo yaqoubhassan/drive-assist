@@ -3,7 +3,6 @@ import { router } from '@inertiajs/react';
 import {
   BellIcon,
   MagnifyingGlassIcon,
-  UserCircleIcon,
   ArrowRightOnRectangleIcon,
   Bars3Icon,
   Cog6ToothIcon,
@@ -12,6 +11,7 @@ import {
 import { SunIcon, MoonIcon } from '@heroicons/react/24/solid';
 import { useTheme } from '@/hooks/useTheme';
 import { clearBrowserSession } from '@/utils/sessionHelper';
+import UserAvatar from '@/Components/UserAvatar';
 
 interface HeaderProps {
   title?: string;
@@ -20,6 +20,7 @@ interface HeaderProps {
     name: string;
     email: string;
     user_type: 'driver' | 'expert' | 'admin';
+    avatar_url?: string | null;
   };
   unreadNotifications: number;
   onMenuClick: () => void;
@@ -35,7 +36,7 @@ interface HeaderProps {
  * - Search functionality (desktop only)
  * - Theme toggle
  * - Notifications badge
- * - User dropdown menu
+ * - User dropdown menu with avatar
  * - Dark mode support
  */
 export default function Header({ title, user, unreadNotifications, onMenuClick }: HeaderProps) {
@@ -133,10 +134,10 @@ export default function Header({ title, user, unreadNotifications, onMenuClick }
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setUserMenuOpen(!userMenuOpen)}
-              className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               aria-label="User menu"
             >
-              <div className="hidden sm:block text-right">
+              <div className="hidden sm:block text-right mr-2">
                 <p className="text-sm font-medium text-gray-900 dark:text-white truncate max-w-[120px]">
                   {user.name}
                 </p>
@@ -144,20 +145,33 @@ export default function Header({ title, user, unreadNotifications, onMenuClick }
                   Expert Account
                 </p>
               </div>
-              <UserCircleIcon className="h-8 w-8 text-gray-400 flex-shrink-0" />
+              <UserAvatar
+                name={user.name}
+                avatarUrl={user.avatar_url}
+                size="md"
+              />
             </button>
 
             {/* Dropdown Menu */}
             {userMenuOpen && (
               <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 z-50">
-                {/* User Info */}
+                {/* User Info with Avatar */}
                 <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                    {user.name}
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                    {user.email}
-                  </p>
+                  <div className="flex items-center space-x-3">
+                    <UserAvatar
+                      name={user.name}
+                      avatarUrl={user.avatar_url}
+                      size="lg"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                        {user.name}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                        {user.email}
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Menu Items */}
