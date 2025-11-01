@@ -93,8 +93,31 @@ export default function Onboarding({
     { number: 5, title: 'Operating Hours', icon: ClockIcon },
   ];
 
-  // Check if step is complete
+  // ✅ FIXED: Check if step is complete
+  // Steps 4 and 5 are OPTIONAL, so they should NEVER block navigation
   const isStepComplete = (step: number): boolean => {
+    switch (step) {
+      case 1: // Required
+        return !!(data.phone && data.business_name && data.business_type);
+      case 2: // Required
+        return !!(
+          data.business_address &&
+          data.location_latitude &&
+          data.location_longitude
+        );
+      case 3: // Required
+        return data.specialties.length > 0;
+      case 4: // ✅ OPTIONAL - Always returns true to allow skipping
+        return true;
+      case 5: // ✅ OPTIONAL - Always returns true to allow skipping
+        return true;
+      default:
+        return false;
+    }
+  };
+
+  // ✅ NEW: Check if step has data (for visual indicators only, not blocking)
+  const hasStepData = (step: number): boolean => {
     switch (step) {
       case 1:
         return !!(data.phone && data.business_name && data.business_type);
@@ -106,14 +129,9 @@ export default function Onboarding({
         );
       case 3:
         return data.specialties.length > 0;
-      case 4: // Pricing - optional but encourage completion
-        // ✅ FIX: Changed from currentStep > 4 to currentStep >= 5
-        // This prevents Step 4 from being marked complete while still on Step 4
-        return (
-          !!(data.hourly_rate_min || data.hourly_rate_max || data.diagnostic_fee) ||
-          currentStep >= 5
-        );
-      case 5: // Hours - optional but encourage completion
+      case 4: // Has pricing data
+        return !!(data.hourly_rate_min || data.hourly_rate_max || data.diagnostic_fee);
+      case 5: // Has hours data
         const hasAnyHours = [
           'monday', 'tuesday', 'wednesday', 'thursday',
           'friday', 'saturday', 'sunday'
@@ -122,16 +140,15 @@ export default function Onboarding({
           const closeKey = `${day}_close` as keyof ExpertData;
           return !!(data[openKey] || data[closeKey]);
         });
-        // ✅ FIX: This is fine - only marks complete if has hours or past step 5
-        return hasAnyHours || currentStep > 5;
+        return hasAnyHours;
       default:
         return false;
     }
   };
 
-  // Calculate completion percentage
+  // Calculate completion percentage based on steps with data
   const completionPercentage = Math.round(
-    (steps.filter((s) => isStepComplete(s.number)).length / steps.length) * 100
+    (steps.filter((s) => hasStepData(s.number)).length / steps.length) * 100
   );
 
   // Navigate to a specific step
@@ -140,31 +157,20 @@ export default function Onboarding({
       return;
     }
     setCurrentStep(step);
-    // ✅ FIX: Only save progress when navigating backwards or clicking on completed steps
-    // Don't save when moving forward with nextStep()
+    // Only save progress when navigating backwards
     if (step < currentStep) {
       saveProgress(step);
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // ✅ CRITICAL FIX: Navigation handlers
-  // These functions now only update LOCAL state, not the backend
+  // ✅ Navigation handlers - only update LOCAL state
   const nextStep = () => {
     if (currentStep < 5) {
       const next = currentStep + 1;
       console.log(`📍 Moving to step ${next} (local only)`);
-      console.log('Current step before:', currentStep);
-      console.log('Next step will be:', next);
-      console.log('Is current step complete?', isStepComplete(currentStep));
-
       setCurrentStep(next);
-
-      console.log('✅ Step changed successfully to:', next);
-      // ✅ DO NOT call saveProgress here - just move forward locally
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    } else {
-      console.warn('⚠️ Already on final step, cannot go further');
     }
   };
 
@@ -291,7 +297,7 @@ export default function Onboarding({
     });
   };
 
-  // ✅ NEW: Handle step change without backend save (for skip buttons)
+  // ✅ Handle step change without backend save (NOT NEEDED ANYMORE since Continue button works)
   const handleStepChange = (step: number) => {
     console.log(`📍 Changing step locally to ${step} (no backend save)`);
     setCurrentStep(step);
@@ -306,7 +312,7 @@ export default function Onboarding({
       errors,
       nextStep,
       previousStep,
-      onStepChange: handleStepChange, // ✅ Pass the new handler
+      onStepChange: handleStepChange, // Pass for compatibility (but won't be used)
     };
 
     // ✅ FIX: Convert arrays to Record format that child components expect
@@ -427,9 +433,9 @@ export default function Onboarding({
                 <nav className="space-y-1">
                   {steps.map((step) => {
                     const Icon = step.icon;
-                    const isCompleted = isStepComplete(step.number);
+                    const hasData = hasStepData(step.number);
                     const isCurrent = currentStep === step.number;
-                    const isAccessible = step.number <= currentStep || isCompleted;
+                    const isAccessible = step.number <= currentStep || hasData;
 
                     return (
                       <button
@@ -438,20 +444,20 @@ export default function Onboarding({
                         disabled={!isAccessible}
                         className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-all ${isCurrent
                           ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800'
-                          : isCompleted
+                          : hasData
                             ? 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
                             : 'opacity-50 cursor-not-allowed'
                           }`}
                       >
                         <div
-                          className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-all ${isCompleted
+                          className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-all ${hasData
                             ? 'bg-green-100 dark:bg-green-900/30'
                             : isCurrent
                               ? 'bg-blue-100 dark:bg-blue-900/30'
                               : 'bg-gray-100 dark:bg-gray-700'
                             }`}
                         >
-                          {isCompleted ? (
+                          {hasData ? (
                             <CheckCircleIcon className="w-5 h-5 text-green-600 dark:text-green-400" />
                           ) : (
                             <Icon
@@ -466,7 +472,7 @@ export default function Onboarding({
                           <p
                             className={`text-sm font-medium truncate ${isCurrent
                               ? 'text-blue-900 dark:text-blue-100'
-                              : isCompleted
+                              : hasData
                                 ? 'text-gray-900 dark:text-white'
                                 : 'text-gray-400 dark:text-gray-500'
                               }`}

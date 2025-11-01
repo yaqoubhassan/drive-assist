@@ -1,5 +1,5 @@
 // resources/js/Components/expert/onboarding/PricingStep.tsx
-// ✅ FIXED: Skip button now properly advances to next step without backend save
+// ✅ FIXED: Removed redundant Continue button - users should use the main navigation
 
 import { motion } from 'framer-motion';
 import { InformationCircleIcon } from '@heroicons/react/24/outline';
@@ -9,35 +9,24 @@ interface PricingStepProps {
   data: ExpertData;
   setData: (updates: Partial<ExpertData>) => void;
   errors: Partial<Record<keyof ExpertData, string>>;
-  onStepChange?: (step: number) => void; // ✅ NEW: For local step changes without backend save
   nextStep: () => void;
   previousStep: () => void;
+  onStepChange?: (step: number) => void; // Kept for compatibility but not used
 }
 
 export default function PricingStep({
   data,
   setData,
   errors,
-  onStepChange,
   nextStep,
   previousStep,
+  onStepChange,
 }: PricingStepProps) {
   const hasAnyPricing = !!(
     data.hourly_rate_min ||
     data.hourly_rate_max ||
     data.diagnostic_fee
   );
-
-  // ✅ Handle skip - uses onStepChange to move forward without backend save
-  const handleSkip = () => {
-    console.log('⏭️ Skipping pricing step');
-    if (onStepChange) {
-      onStepChange(5); // Move to step 5 (Operating Hours) locally only
-    } else {
-      // Fallback to nextStep if onStepChange not provided
-      nextStep();
-    }
-  };
 
   return (
     <motion.div
@@ -218,34 +207,9 @@ export default function PricingStep({
         </div>
       </div>
 
-      {/* ✅ FIXED: Skip Button - Now uses handleSkip which only updates local state */}
-      <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <button
-            type="button"
-            onClick={handleSkip}
-            className="group relative px-6 py-2.5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium transition-colors"
-          >
-            <span className="relative flex items-center gap-2">
-              {hasAnyPricing ? (
-                <>
-                  Continue
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </>
-              ) : (
-                <>
-                  Skip this step for now
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                  </svg>
-                </>
-              )}
-            </span>
-          </button>
-        </div>
-      </div>
+      {/* ✅ REMOVED: Redundant Continue/Skip button */}
+      {/* Users should use the main Continue button at the bottom of the form */}
+      {/* This step is now marked as always complete in isStepComplete() */}
     </motion.div>
   );
 }
