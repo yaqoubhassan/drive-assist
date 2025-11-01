@@ -39,10 +39,18 @@ export interface OnboardingProps {
   availableSpecialties: Record<string, string>;
 }
 
+// export interface StepProps {
+//   data: ExpertData;
+//   setData: (key: keyof ExpertData, value: any) => void;
+//   errors: Partial<Record<keyof ExpertData, string>>;
+// }
+
 export interface StepProps {
   data: ExpertData;
-  setData: (key: keyof ExpertData, value: any) => void;
+  setData: (updates: Partial<ExpertData>) => void;
   errors: Partial<Record<keyof ExpertData, string>>;
+  nextStep: () => void;
+  previousStep: () => void;
 }
 
 export interface Step {
