@@ -29,9 +29,10 @@ interface HeaderProps {
  * Header Component for Expert Dashboard
  * 
  * Features:
+ * - Responsive across all screen sizes
  * - Mobile menu toggle
  * - Page title display
- * - Search functionality
+ * - Search functionality (desktop only)
  * - Theme toggle
  * - Notifications badge
  * - User dropdown menu
@@ -68,32 +69,33 @@ export default function Header({ title, user, unreadNotifications, onMenuClick }
   };
 
   return (
-    <header className="sticky top-0 z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 h-16">
+    <header className="sticky top-0 z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 h-16 shadow-sm">
       <div className="px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
         {/* Left: Mobile Menu + Title */}
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-3 min-w-0 flex-1">
           <button
             onClick={onMenuClick}
-            className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex-shrink-0"
+            aria-label="Open menu"
           >
             <Bars3Icon className="h-6 w-6 text-gray-500 dark:text-gray-400" />
           </button>
           {title && (
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+            <h1 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white truncate">
               {title}
             </h1>
           )}
         </div>
 
         {/* Right: Search, Theme Toggle, Notifications, User Menu */}
-        <div className="flex items-center space-x-3">
-          {/* Search */}
-          <div className="hidden md:block">
+        <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
+          {/* Search - Hidden on small mobile */}
+          <div className="hidden sm:block">
             <div className="relative">
               <input
                 type="text"
                 placeholder="Search..."
-                className="w-64 pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-48 lg:w-64 pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               />
               <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             </div>
@@ -113,11 +115,14 @@ export default function Header({ title, user, unreadNotifications, onMenuClick }
           </button>
 
           {/* Notifications */}
-          <button className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+          <button
+            className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            aria-label="Notifications"
+          >
             <BellIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
             {unreadNotifications > 0 && (
               <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-xs font-bold">
+                <span className="text-white text-[10px] font-bold">
                   {unreadNotifications > 9 ? '9+' : unreadNotifications}
                 </span>
               </span>
@@ -128,17 +133,18 @@ export default function Header({ title, user, unreadNotifications, onMenuClick }
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setUserMenuOpen(!userMenuOpen)}
-              className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              aria-label="User menu"
             >
-              <div className="hidden md:block text-right">
-                <p className="text-sm font-medium text-gray-900 dark:text-white">
+              <div className="hidden sm:block text-right">
+                <p className="text-sm font-medium text-gray-900 dark:text-white truncate max-w-[120px]">
                   {user.name}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   Expert Account
                 </p>
               </div>
-              <UserCircleIcon className="h-8 w-8 text-gray-400" />
+              <UserCircleIcon className="h-8 w-8 text-gray-400 flex-shrink-0" />
             </button>
 
             {/* Dropdown Menu */}
