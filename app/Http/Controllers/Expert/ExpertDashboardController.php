@@ -3,14 +3,18 @@
 namespace App\Http\Controllers\Expert;
 
 use App\Http\Controllers\Controller;
+use App\Services\FileUploadService;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ExpertDashboardController extends Controller
 {
+    public function __construct(private FileUploadService $fileUploadService) {}
     /**
      * Display the expert dashboard
      */
@@ -577,6 +581,110 @@ class ExpertDashboardController extends Controller
             ]);
 
             return back()->withErrors(['error' => 'Failed to update profile. Please try again.']);
+        }
+    }
+
+    public function uploadAvatar(Request $request)
+    {
+        $user = auth()->user();
+
+        try {
+            $request->validate([
+                'avatar' => 'required|file|mimes:jpg,jpeg,png,gif,webp|max:2048', // 2MB max
+            ]);
+
+            $file = $request->file('avatar');
+
+            // Delete old avatar if exists
+            if ($user->avatar_url) {
+                $oldPath = str_replace('/storage/', '', parse_url($user->avatar_url, PHP_URL_PATH));
+                if (Storage::disk('public')->exists($oldPath)) {
+                    Storage::disk('public')->delete($oldPath);
+                }
+            }
+
+            // Use FileUploadService to upload avatar
+            $result = $this->fileUploadService->uploadAvatar($file, $user->id);
+
+            // Update user record
+            $user->update([
+                'avatar_url' => $result['url'],
+            ]);
+
+            Log::info('Avatar uploaded successfully', [
+                'user_id' => $user->id,
+                'path' => $result['path'],
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Avatar uploaded successfully',
+                'avatar_url' => $result['url'],
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->validator->errors()->first(),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Failed to upload avatar', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to upload avatar. Please try again.',
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete user avatar
+     */
+    public function deleteAvatar(Request $request)
+    {
+        $user = auth()->user();
+
+        try {
+            if (!$user->avatar_url) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'No avatar to delete',
+                ], 404);
+            }
+
+            // Extract path from URL
+            $oldPath = str_replace('/storage/', '', parse_url($user->avatar_url, PHP_URL_PATH));
+
+            // Use FileUploadService to delete avatar
+            $this->fileUploadService->deleteAvatar($oldPath);
+
+            // Update user record
+            $user->update([
+                'avatar_url' => null,
+            ]);
+
+            Log::info('Avatar deleted successfully', [
+                'user_id' => $user->id,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Avatar deleted successfully',
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to delete avatar', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to delete avatar. Please try again.',
+            ], 500);
         }
     }
 }

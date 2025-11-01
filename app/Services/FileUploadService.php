@@ -68,4 +68,64 @@ class FileUploadService
   {
     return Storage::disk('public')->url($path);
   }
+
+  /**
+   * Upload user avatar/profile picture
+   */
+  public function uploadAvatar(UploadedFile $file, int $userId): array
+  {
+    // Validate file
+    $this->validateAvatar($file);
+
+    // Generate unique filename
+    $extension = $file->getClientOriginalExtension();
+    $filename = 'avatar_' . $userId . '_' . time() . '.' . $extension;
+    $path = "avatars/{$userId}/{$filename}";
+
+    // Store file locally
+    Storage::disk('public')->put($path, file_get_contents($file->getRealPath()));
+
+    $url = Storage::disk('public')->url($path);
+
+    return [
+      'path' => $path,
+      'url' => $url,
+    ];
+  }
+
+  /**
+   * Validate avatar file
+   */
+  private function validateAvatar(UploadedFile $file): void
+  {
+    // Check file size (max 2MB)
+    if ($file->getSize() > 2 * 1024 * 1024) {
+      throw new \Exception('File size must be less than 2MB');
+    }
+
+    // Check mime type - only images
+    $allowedMimes = [
+      'image/jpeg',
+      'image/png',
+      'image/jpg',
+      'image/gif',
+      'image/webp',
+    ];
+
+    if (!in_array($file->getMimeType(), $allowedMimes)) {
+      throw new \Exception('Invalid file type. Only JPG, PNG, GIF, and WebP images are allowed.');
+    }
+  }
+
+  /**
+   * Delete avatar from local storage
+   */
+  public function deleteAvatar(string $path): bool
+  {
+    if (Storage::disk('public')->exists($path)) {
+      return Storage::disk('public')->delete($path);
+    }
+
+    return false;
+  }
 }

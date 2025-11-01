@@ -1,4 +1,3 @@
-// resources/js/Pages/Expert/Profile/Edit.tsx
 import { useState, FormEvent, useEffect } from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
@@ -125,6 +124,7 @@ export default function EditProfile({ user, expertProfile }: Props) {
   const [activeSection, setActiveSection] = useState<Section>('personal');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const prefersReducedMotion = useReducedMotion();
+  const [currentAvatarUrl, setCurrentAvatarUrl] = useState(user.avatar_url);
 
   const { data, setData, put, processing, errors, isDirty } = useForm({
     // Personal info
@@ -190,6 +190,10 @@ export default function EditProfile({ user, expertProfile }: Props) {
       preserveScroll: true,
       onSuccess: () => setHasUnsavedChanges(false),
     });
+  };
+
+  const handleAvatarUpdate = (newAvatarUrl: string | null) => {
+    setCurrentAvatarUrl(newAvatarUrl);
   };
 
   const toggleSpecialty = (specialty: string) => {
@@ -341,7 +345,8 @@ export default function EditProfile({ user, expertProfile }: Props) {
                         data={data}
                         setData={setData}
                         errors={errors}
-                        user={user}
+                        user={{ ...user, avatar_url: currentAvatarUrl }}
+                        onAvatarUpdate={handleAvatarUpdate}
                       />
                     )}
 

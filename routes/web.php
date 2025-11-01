@@ -449,6 +449,11 @@ Route::prefix('expert')->name('expert.')->middleware(['auth', 'expert', 'verifie
         Route::get('/profile', [ExpertDashboardController::class, 'profile'])->name('profile.edit');
         Route::put('/profile', [ExpertDashboardController::class, 'updateProfile'])->name('profile.update');
 
+        Route::post('/profile/upload-avatar', [ExpertDashboardController::class, 'uploadAvatar'])
+            ->name('profile.upload-avatar');
+        Route::delete('/profile/delete-avatar', [ExpertDashboardController::class, 'deleteAvatar'])
+            ->name('profile.delete-avatar');
+
         // Gallery Management (shop photos, work examples)
         Route::post('/gallery/upload', [ExpertDashboardController::class, 'uploadGalleryImage'])->name('gallery.upload');
         Route::delete('/gallery/{image}', [ExpertDashboardController::class, 'deleteGalleryImage'])->name('gallery.delete');
