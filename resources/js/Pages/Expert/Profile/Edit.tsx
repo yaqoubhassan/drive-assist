@@ -13,6 +13,7 @@ import {
 } from '@heroicons/react/24/outline';
 import ExpertDashboardLayout from '@/Layouts/ExpertDashboardLayout';
 import FlashMessages from '@/Components/ui/FlashMessages';
+import { useGoogleMaps } from '@/hooks/useGoogleMaps';
 
 // Import section components
 import PersonalInfoSection from './Sections/PersonalInfoSection';
@@ -164,6 +165,11 @@ export default function EditProfile({ user, expertProfile }: Props) {
     hourly_rate_max: expertProfile.hourly_rate_max || '',
     diagnostic_fee: expertProfile.diagnostic_fee || '',
     accepts_emergency: expertProfile.accepts_emergency || false,
+  });
+
+  const { mapsLoaded } = useGoogleMaps({
+    apiKey: import.meta.env.VITE_GOOGLE_MAPS_KEY,
+    libraries: ['places'],
   });
 
   // Track changes
@@ -347,6 +353,7 @@ export default function EditProfile({ user, expertProfile }: Props) {
                         errors={errors}
                         user={{ ...user, avatar_url: currentAvatarUrl }}
                         onAvatarUpdate={handleAvatarUpdate}
+                        mapsLoaded={mapsLoaded}
                       />
                     )}
 

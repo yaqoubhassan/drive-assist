@@ -18,9 +18,9 @@ class ExpertDashboardController extends Controller
     /**
      * Display the expert dashboard
      */
-    public function index()
+    public function index(Request $request)
     {
-        $user = auth()->user();
+        $user = $request->user();
         $expertProfile = $user->expertProfile;
 
         if (!$expertProfile) {
@@ -153,7 +153,7 @@ class ExpertDashboardController extends Controller
      */
     public function jobs(Request $request): Response
     {
-        $expertProfile = auth()->user()->expertProfile;
+        $expertProfile = $request->user()->expertProfile;
 
         $query = $expertProfile->jobs()->with(['driver', 'vehicle', 'lead']);
 
@@ -191,7 +191,7 @@ class ExpertDashboardController extends Controller
      */
     public function updateJobStatus(Request $request, $id)
     {
-        $job = auth()->user()
+        $job = $request->user()
             ->expertProfile
             ->jobs()
             ->findOrFail($id);
@@ -212,7 +212,7 @@ class ExpertDashboardController extends Controller
      */
     public function completeJob(Request $request, $id)
     {
-        $job = auth()->user()
+        $job = $request->user()
             ->expertProfile
             ->jobs()
             ->findOrFail($id);
@@ -262,7 +262,7 @@ class ExpertDashboardController extends Controller
      */
     public function respondToReview(Request $request, $id)
     {
-        $review = auth()->user()
+        $review = $request->user()
             ->expertProfile
             ->reviews()
             ->findOrFail($id);
@@ -422,7 +422,7 @@ class ExpertDashboardController extends Controller
      */
     public function updateProfile(Request $request)
     {
-        $user = auth()->user();
+        $user = $request->user();
         $expertProfile = $user->expertProfile;
 
         DB::beginTransaction();
@@ -586,7 +586,7 @@ class ExpertDashboardController extends Controller
 
     public function uploadAvatar(Request $request)
     {
-        $user = auth()->user();
+        $user = $request->user();
 
         try {
             $request->validate([
@@ -645,7 +645,7 @@ class ExpertDashboardController extends Controller
      */
     public function deleteAvatar(Request $request)
     {
-        $user = auth()->user();
+        $user = $request->user();
 
         try {
             if (!$user->avatar_url) {
