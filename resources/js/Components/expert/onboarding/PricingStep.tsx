@@ -1,6 +1,3 @@
-// resources/js/Components/expert/onboarding/PricingStep.tsx
-// ✅ FIXED: Removed redundant Continue button - users should use the main navigation
-
 import { motion } from 'framer-motion';
 import { InformationCircleIcon } from '@heroicons/react/24/outline';
 import type { ExpertData } from '@/types/expert-onboarding';
@@ -206,10 +203,6 @@ export default function PricingStep({
           </button>
         </div>
       </div>
-
-      {/* ✅ REMOVED: Redundant Continue/Skip button */}
-      {/* Users should use the main Continue button at the bottom of the form */}
-      {/* This step is now marked as always complete in isStepComplete() */}
     </motion.div>
   );
 }

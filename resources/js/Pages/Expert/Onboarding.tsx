@@ -95,23 +95,64 @@ export default function Onboarding({
 
   // ✅ FIXED: Check if step is complete
   // Steps 4 and 5 are OPTIONAL, so they should NEVER block navigation
+  // const isStepComplete = (step: number): boolean => {
+  //   switch (step) {
+  //     case 1: // Required
+  //       return !!(data.phone && data.business_name && data.business_type);
+  //     case 2: // Required
+  //       return !!(
+  //         data.business_address &&
+  //         data.location_latitude &&
+  //         data.location_longitude
+  //       );
+  //     case 3: // Required
+  //       return data.specialties.length > 0;
+  //     case 4: // ✅ OPTIONAL - Always returns true to allow skipping
+  //       return true;
+  //     case 5: // ✅ OPTIONAL - Always returns true to allow skipping
+  //       return true;
+  //     default:
+  //       return false;
+  //   }
+  // };
+
   const isStepComplete = (step: number): boolean => {
+    console.log(`🔍 Checking if step ${step} is complete, currentStep: ${currentStep}`);
+
     switch (step) {
-      case 1: // Required
-        return !!(data.phone && data.business_name && data.business_type);
-      case 2: // Required
-        return !!(
+      case 1: // Basic Information (REQUIRED)
+        const step1Complete = !!(data.phone && data.business_name && data.business_type);
+        console.log(`✅ Step 1 complete: ${step1Complete}`);
+        return step1Complete;
+
+      case 2: // Location (REQUIRED)
+        const step2Complete = !!(
           data.business_address &&
           data.location_latitude &&
           data.location_longitude
         );
-      case 3: // Required
-        return data.specialties.length > 0;
-      case 4: // ✅ OPTIONAL - Always returns true to allow skipping
+        console.log(`✅ Step 2 complete: ${step2Complete}`);
+        return step2Complete;
+
+      case 3: // Services & Specialties (REQUIRED)
+        const step3Complete = data.specialties.length > 0;
+        console.log(`✅ Step 3 complete: ${step3Complete} (specialties: ${data.specialties.length})`);
+        return step3Complete;
+
+      case 4: // Pricing (OPTIONAL)
+        // ✅ FIXED: Always return true - step 4 is optional
+        // This allows users to proceed to step 5 without filling pricing
+        console.log(`✅ Step 4 (Pricing) is OPTIONAL - always complete: true`);
         return true;
-      case 5: // ✅ OPTIONAL - Always returns true to allow skipping
+
+      case 5: // Operating Hours (OPTIONAL)
+        // ✅ FIXED: Also always return true - step 5 is optional
+        // This allows users to complete onboarding without operating hours
+        console.log(`✅ Step 5 (Operating Hours) is OPTIONAL - always complete: true`);
         return true;
+
       default:
+        console.log(`❌ Unknown step ${step}`);
         return false;
     }
   };
@@ -165,12 +206,26 @@ export default function Onboarding({
   };
 
   // ✅ Navigation handlers - only update LOCAL state
+  // const nextStep = () => {
+  //   if (currentStep < 5) {
+  //     const next = currentStep + 1;
+  //     console.log(`📍 Moving to step ${next} (local only)`);
+  //     setCurrentStep(next);
+  //     window.scrollTo({ top: 0, behavior: 'smooth' });
+  //   }
+  // };
+
   const nextStep = () => {
+    console.log(`🔵 nextStep() called, current: ${currentStep}`);
+
     if (currentStep < 5) {
       const next = currentStep + 1;
-      console.log(`📍 Moving to step ${next} (local only)`);
+      console.log(`📍 Moving to step ${next} (local state only, no backend save)`);
       setCurrentStep(next);
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      console.log(`✅ Step changed successfully to: ${next}`);
+    } else {
+      console.warn(`⚠️ Cannot go beyond step 5. Current: ${currentStep}`);
     }
   };
 
@@ -523,7 +578,19 @@ export default function Onboarding({
                   {currentStep < 5 ? (
                     <motion.button
                       type="button"
-                      onClick={nextStep}
+                      onClick={(e) => {
+                        console.log(`🔵 Continue button clicked on step ${currentStep}`);
+                        e.preventDefault(); // ✅ Prevent any default behavior
+                        e.stopPropagation(); // ✅ Stop event bubbling
+
+                        // Additional check to prevent accidental submission
+                        if (currentStep < 5) {
+                          console.log(`📍 Moving from step ${currentStep} to ${currentStep + 1}`);
+                          nextStep();
+                        } else {
+                          console.warn('⚠️ Already on final step, use Complete button instead');
+                        }
+                      }}
                       disabled={!isStepComplete(currentStep) || processing}
                       whileHover={{
                         scale: !isStepComplete(currentStep) || processing ? 1 : 1.02,
