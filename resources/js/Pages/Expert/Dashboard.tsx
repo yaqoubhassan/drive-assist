@@ -1,21 +1,21 @@
-import { Head, Link } from '@inertiajs/react';
-import ExpertDashboardLayout from '@/Layouts/Expertdashboardlayout';
-import { motion } from 'framer-motion';
+import ExpertDashboardLayout from '@/Layouts/ExpertDashboardLayout';
 import {
-  UsersIcon,
   BriefcaseIcon,
-  StarIcon,
-  CurrencyDollarIcon,
-  EyeIcon,
   CheckCircleIcon,
+  CurrencyDollarIcon,
   ExclamationTriangleIcon,
+  EyeIcon,
   ShieldCheckIcon,
+  StarIcon,
+  UsersIcon,
 } from '@heroicons/react/24/outline';
 import {
-  ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
+  ArrowTrendingUpIcon,
 } from '@heroicons/react/24/solid';
-import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { Head, Link } from '@inertiajs/react';
+import { motion } from 'framer-motion';
+import { CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 interface KycInfo {
   kyc_status: string;

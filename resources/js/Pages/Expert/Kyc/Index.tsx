@@ -1,21 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { Head, router } from '@inertiajs/react';
-import ExpertLayout from '@/Layouts/Expertdashboardlayout';
-import { motion, AnimatePresence } from 'framer-motion';
+import KycStatusBanner from '@/Components/expert/kyc/KycStatusBanner';
 import KycStep1BusinessDocuments from '@/Components/expert/kyc/KycStep1BusinessDocuments';
 import KycStep2Identity from '@/Components/expert/kyc/KycStep2Identity';
 import KycStep3Insurance from '@/Components/expert/kyc/Kycstep3Insurance';
 import KycStep4BackgroundCheck from '@/Components/expert/kyc/KycStep4BackgroundCheck';
 import KycStep5Review from '@/Components/expert/kyc/KycStep5Review';
-import KycStatusBanner from '@/Components/expert/kyc/KycStatusBanner';
+import ExpertLayout from '@/Layouts/ExpertDashboardLayout';
 import {
   CheckCircleIcon,
+  CheckIcon,
+  ClipboardDocumentCheckIcon,
   DocumentTextIcon,
   IdentificationIcon,
   ShieldCheckIcon,
-  ClipboardDocumentCheckIcon,
-  CheckIcon,
 } from '@heroicons/react/24/outline';
+import { Head } from '@inertiajs/react';
+import { AnimatePresence, motion } from 'framer-motion';
+import React, { useEffect, useState } from 'react';
 
 interface KycData {
   id: number;
