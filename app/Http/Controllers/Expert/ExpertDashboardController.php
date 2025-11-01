@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Expert;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -358,9 +360,56 @@ class ExpertDashboardController extends Controller
      */
     public function profile(): Response
     {
+        $user = auth()->user();
+        $expertProfile = $user->expertProfile;
+
+        // Get current specialties
+        $currentSpecialties = $expertProfile->specialties()
+            ->pluck('specialty')
+            ->toArray();
+
         return Inertia::render('Expert/Profile/Edit', [
-            'user' => auth()->user(),
-            'expertProfile' => auth()->user()->expertProfile,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'avatar_url' => $user->avatar_url,
+                'location_address' => $user->location_address,
+                'location_latitude' => $user->location_latitude ? (float)$user->location_latitude : null,
+                'location_longitude' => $user->location_longitude ? (float)$user->location_longitude : null,
+            ],
+            'expertProfile' => [
+                'id' => $expertProfile->id,
+                'business_name' => $expertProfile->business_name,
+                'business_type' => $expertProfile->business_type,
+                'bio' => $expertProfile->bio,
+                'years_experience' => $expertProfile->years_experience,
+                'employee_count' => $expertProfile->employee_count,
+                'service_radius_km' => $expertProfile->service_radius_km,
+                'hourly_rate_min' => $expertProfile->hourly_rate_min ? (float)$expertProfile->hourly_rate_min : null,
+                'hourly_rate_max' => $expertProfile->hourly_rate_max ? (float)$expertProfile->hourly_rate_max : null,
+                'diagnostic_fee' => $expertProfile->diagnostic_fee ? (float)$expertProfile->diagnostic_fee : null,
+                'accepts_emergency' => $expertProfile->accepts_emergency,
+                'specialties' => $currentSpecialties,
+                'monday_open' => $expertProfile->monday_open,
+                'monday_close' => $expertProfile->monday_close,
+                'tuesday_open' => $expertProfile->tuesday_open,
+                'tuesday_close' => $expertProfile->tuesday_close,
+                'wednesday_open' => $expertProfile->wednesday_open,
+                'wednesday_close' => $expertProfile->wednesday_close,
+                'thursday_open' => $expertProfile->thursday_open,
+                'thursday_close' => $expertProfile->thursday_close,
+                'friday_open' => $expertProfile->friday_open,
+                'friday_close' => $expertProfile->friday_close,
+                'saturday_open' => $expertProfile->saturday_open,
+                'saturday_close' => $expertProfile->saturday_close,
+                'sunday_open' => $expertProfile->sunday_open,
+                'sunday_close' => $expertProfile->sunday_close,
+                'avg_rating' => $expertProfile->avg_rating ? (float)$expertProfile->avg_rating : 0,
+                'total_jobs' => $expertProfile->total_jobs,
+                'verification_status' => $expertProfile->verification_status,
+            ],
         ]);
     }
 
@@ -370,16 +419,118 @@ class ExpertDashboardController extends Controller
     public function updateProfile(Request $request)
     {
         $user = auth()->user();
+        $expertProfile = $user->expertProfile;
 
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
-            'phone' => 'nullable|string|max:20',
-        ]);
+        DB::beginTransaction();
+        try {
+            // Validate based on what's being updated
+            $validated = $request->validate([
+                // User fields
+                'name' => 'sometimes|required|string|max:255',
+                'email' => 'sometimes|required|string|email|max:255|unique:users,email,' . $user->id,
+                'phone' => 'sometimes|nullable|string|max:20',
+                'avatar_url' => 'sometimes|nullable|string|max:500',
+                'location_address' => 'sometimes|nullable|string|max:500',
+                'location_latitude' => 'sometimes|nullable|numeric|between:-90,90',
+                'location_longitude' => 'sometimes|nullable|numeric|between:-180,180',
 
-        $user->update($validated);
+                // Expert profile fields
+                'business_name' => 'sometimes|required|string|max:255',
+                'business_type' => 'sometimes|required|in:mechanic,electrician,body_shop,mobile_mechanic,other',
+                'bio' => 'sometimes|nullable|string|max:1000',
+                'years_experience' => 'sometimes|nullable|integer|min:0|max:99',
+                'employee_count' => 'sometimes|nullable|integer|min:1|max:999',
+                'service_radius_km' => 'sometimes|required|integer|min:5|max:100',
+                'hourly_rate_min' => 'sometimes|nullable|numeric|min:0|max:9999.99',
+                'hourly_rate_max' => 'sometimes|nullable|numeric|min:0|max:9999.99',
+                'diagnostic_fee' => 'sometimes|nullable|numeric|min:0|max:9999.99',
+                'accepts_emergency' => 'sometimes|boolean',
+                'specialties' => 'sometimes|array',
+                'specialties.*' => 'sometimes|in:engine,brakes,electrical,transmission,tires,bodywork,diagnostics,maintenance,air_conditioning,suspension,exhaust',
 
-        return back()->with('success', 'Profile updated successfully.');
+                // Operating hours
+                'monday_open' => 'sometimes|nullable|date_format:H:i',
+                'monday_close' => 'sometimes|nullable|date_format:H:i',
+                'tuesday_open' => 'sometimes|nullable|date_format:H:i',
+                'tuesday_close' => 'sometimes|nullable|date_format:H:i',
+                'wednesday_open' => 'sometimes|nullable|date_format:H:i',
+                'wednesday_close' => 'sometimes|nullable|date_format:H:i',
+                'thursday_open' => 'sometimes|nullable|date_format:H:i',
+                'thursday_close' => 'sometimes|nullable|date_format:H:i',
+                'friday_open' => 'sometimes|nullable|date_format:H:i',
+                'friday_close' => 'sometimes|nullable|date_format:H:i',
+                'saturday_open' => 'sometimes|nullable|date_format:H:i',
+                'saturday_close' => 'sometimes|nullable|date_format:H:i',
+                'sunday_open' => 'sometimes|nullable|date_format:H:i',
+                'sunday_close' => 'sometimes|nullable|date_format:H:i',
+            ]);
+
+            // Update user fields
+            $userFields = ['name', 'email', 'phone', 'avatar_url', 'location_address', 'location_latitude', 'location_longitude'];
+            $userData = array_intersect_key($validated, array_flip($userFields));
+            if (!empty($userData)) {
+                $user->update($userData);
+            }
+
+            // Update expert profile fields
+            $profileFields = [
+                'business_name',
+                'business_type',
+                'bio',
+                'years_experience',
+                'employee_count',
+                'service_radius_km',
+                'hourly_rate_min',
+                'hourly_rate_max',
+                'diagnostic_fee',
+                'accepts_emergency',
+                'monday_open',
+                'monday_close',
+                'tuesday_open',
+                'tuesday_close',
+                'wednesday_open',
+                'wednesday_close',
+                'thursday_open',
+                'thursday_close',
+                'friday_open',
+                'friday_close',
+                'saturday_open',
+                'saturday_close',
+                'sunday_open',
+                'sunday_close',
+            ];
+            $profileData = array_intersect_key($validated, array_flip($profileFields));
+            if (!empty($profileData)) {
+                $expertProfile->update($profileData);
+            }
+
+            // Update specialties if provided
+            if (isset($validated['specialties'])) {
+                $expertProfile->specialties()->delete();
+                foreach ($validated['specialties'] as $specialty) {
+                    $expertProfile->specialties()->create(['specialty' => $specialty]);
+                }
+            }
+
+            DB::commit();
+
+            Log::info('Expert profile updated', [
+                'user_id' => $user->id,
+                'profile_id' => $expertProfile->id,
+            ]);
+
+            return back()->with('success', 'Profile updated successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('Failed to update expert profile', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return back()->withErrors(['error' => 'Failed to update profile. Please try again.']);
+        }
     }
 
     /**

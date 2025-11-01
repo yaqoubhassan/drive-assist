@@ -1,17 +1,17 @@
-import { useState, useRef, useEffect } from 'react';
-import { router } from '@inertiajs/react';
-import {
-  BellIcon,
-  MagnifyingGlassIcon,
-  ArrowRightOnRectangleIcon,
-  Bars3Icon,
-  Cog6ToothIcon,
-  UserIcon,
-} from '@heroicons/react/24/outline';
-import { SunIcon, MoonIcon } from '@heroicons/react/24/solid';
+import UserAvatar from '@/Components/UserAvatar';
 import { useTheme } from '@/hooks/useTheme';
 import { clearBrowserSession } from '@/utils/sessionHelper';
-import UserAvatar from '@/Components/UserAvatar';
+import {
+  ArrowRightOnRectangleIcon,
+  Bars3Icon,
+  BellIcon,
+  Cog6ToothIcon,
+  MagnifyingGlassIcon,
+  UserIcon,
+} from '@heroicons/react/24/outline';
+import { MoonIcon, SunIcon } from '@heroicons/react/24/solid';
+import { router } from '@inertiajs/react';
+import { useEffect, useRef, useState } from 'react';
 
 interface HeaderProps {
   title?: string;
@@ -26,19 +26,6 @@ interface HeaderProps {
   onMenuClick: () => void;
 }
 
-/**
- * Header Component for Expert Dashboard
- * 
- * Features:
- * - Responsive across all screen sizes
- * - Mobile menu toggle
- * - Page title display
- * - Search functionality (desktop only)
- * - Theme toggle
- * - Notifications badge
- * - User dropdown menu with avatar
- * - Dark mode support
- */
 export default function Header({ title, user, unreadNotifications, onMenuClick }: HeaderProps) {
   const { theme, toggleTheme } = useTheme();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -177,7 +164,7 @@ export default function Header({ title, user, unreadNotifications, onMenuClick }
                 {/* Menu Items */}
                 <button
                   onClick={() => {
-                    router.visit(route('expert.profile'));
+                    router.visit(route('expert.profile.edit'));
                     setUserMenuOpen(false);
                   }}
                   className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
