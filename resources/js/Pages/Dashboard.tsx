@@ -1,4 +1,4 @@
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import AuthenticatedLayout from '@/Layouts/DriverLayout';
 import { Head } from '@inertiajs/react';
 
 export default function Dashboard() {

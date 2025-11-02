@@ -15,7 +15,7 @@ export default function DescriptionInput({
   onChange,
   error,
   minLength = 20,
-  maxLength = 500,
+  maxLength = 700,
 }: DescriptionInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const charCount = value.length;

@@ -1,19 +1,42 @@
-import ApplicationLogo from '@/Components/ApplicationLogo';
-import { Link } from '@inertiajs/react';
 import { PropsWithChildren } from 'react';
+import Navbar from '@/Components/Navbar';
+import Footer from '@/Components/Footer';
+import { ThemeProvider } from '@/contexts/ThemeContext';
+import { PageProps } from '@/types';
 
-export default function Guest({ children }: PropsWithChildren) {
+/**
+ * GuestLayout Component
+ * 
+ * Layout for unauthenticated users and public pages.
+ * Uses the existing Navbar and Footer components.
+ * 
+ * Features:
+ * - Branded navbar with proper auth awareness
+ * - Theme support via ThemeProvider
+ * - Full-page content area
+ * - Site-wide footer
+ * - Proper spacing for fixed navbar
+ */
+
+interface GuestLayoutProps extends PropsWithChildren {
+    auth?: PageProps['auth'];
+}
+
+export default function GuestLayout({ auth, children }: GuestLayoutProps) {
     return (
-        <div className="flex min-h-screen flex-col items-center bg-gray-100 pt-6 sm:justify-center sm:pt-0 dark:bg-gray-900">
-            <div>
-                <Link href="/">
-                    <ApplicationLogo className="h-20 w-20 fill-current text-gray-500" />
-                </Link>
-            </div>
+        <ThemeProvider>
+            <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col transition-colors">
+                {/* Navbar - using existing component */}
+                <Navbar auth={auth} />
 
-            <div className="mt-6 w-full overflow-hidden bg-white px-6 py-4 shadow-md sm:max-w-md sm:rounded-lg dark:bg-gray-800">
-                {children}
+                {/* Main content area with padding for fixed navbar */}
+                <main className="flex-1 pt-16">
+                    {children}
+                </main>
+
+                {/* Footer - using existing component */}
+                <Footer />
             </div>
-        </div>
+        </ThemeProvider>
     );
 }
