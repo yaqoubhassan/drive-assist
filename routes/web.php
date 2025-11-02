@@ -11,6 +11,7 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\CarIssueController;
 // use App\Http\Controllers\DiagnosisController;
+use App\Http\Controllers\DiagnosisController;
 use App\Http\Controllers\Driver\DriverDashboardController;
 use App\Http\Controllers\DrivingTipController;
 use App\Http\Controllers\ElectricVehicleController;
@@ -30,6 +31,7 @@ use App\Http\Controllers\WarningLightController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+
 
 
 /*
@@ -73,11 +75,24 @@ Route::get('/about', function () {
 })->name('about');
 
 // Diagnose (Guest Troubleshooting)
-// Route::prefix('diagnose')->name('diagnose.')->group(function () {
-//     Route::get('/', [DiagnosisController::class, 'create'])->name('index');
-//     Route::post('/submit', [DiagnosisController::class, 'store'])->name('submit');
-//     Route::get('/{diagnosis}/results', [DiagnosisController::class, 'show'])->name('results');
-// });
+Route::prefix('diagnose')->name('diagnose.')->group(function () {
+    // Show diagnosis form (create page)
+    Route::get('/', [DiagnosisController::class, 'create'])
+        ->name('create');
+
+    // Submit diagnosis for AI analysis
+    Route::post('/', [DiagnosisController::class, 'store'])
+        ->middleware(['throttle:diagnosis'])
+        ->name('store');
+
+    // View diagnosis results
+    Route::get('/{diagnosis}', [DiagnosisController::class, 'show'])
+        ->name('show');
+
+    // Submit feedback on diagnosis
+    Route::post('/{diagnosis}/feedback', [DiagnosisController::class, 'feedback'])
+        ->name('feedback');
+});
 
 // Expert Search & Profiles (Public)
 Route::prefix('experts')->name('experts.')->group(function () {
