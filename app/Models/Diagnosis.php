@@ -43,6 +43,11 @@ class Diagnosis extends Model
         'safe_to_drive' => 'boolean',
     ];
 
+    protected $attributes = [
+        'ai_provider' => 'groq',  // Set default value
+        'status' => 'pending',
+    ];
+
     /**
      * Get the user that owns the diagnosis
      */
