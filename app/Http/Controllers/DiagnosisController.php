@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreDiagnosisRequest;
 use App\Models\Diagnosis;
 use App\Models\Vehicle;
-use Illuminate\Http\Request;
+use App\Models\DiagnosisImage;
+use App\Http\Requests\StoreDiagnosisRequest;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -14,141 +15,64 @@ use Inertia\Response;
 class DiagnosisController extends Controller
 {
     /**
-     * Display the diagnosis form (create page)
-     * 
-     * This method shows the diagnosis form where users can describe their vehicle issues.
-     * No authentication required - guests can use this feature.
+     * Show the diagnosis form
      */
     public function create(): Response
     {
-        // Get user's vehicles if authenticated
-        $vehicles = auth()->check()
-            ? auth()->user()->vehicles()->get(['id', 'make', 'model', 'year'])
-            : [];
-
-        // Get available categories for the dropdown
-        $categories = [
-            'engine' => [
-                'value' => 'engine',
-                'label' => 'Engine Issues',
-                'icon' => 'Wrench',
-                'description' => 'Strange noises, check engine light, poor performance'
-            ],
-            'brakes' => [
-                'value' => 'brakes',
-                'label' => 'Brake Problems',
-                'icon' => 'AlertCircle',
-                'description' => 'Squeaking, grinding, soft pedal, pulling'
-            ],
-            'electrical' => [
-                'value' => 'electrical',
-                'label' => 'Electrical Faults',
-                'icon' => 'Zap',
-                'description' => 'Battery, alternator, lights, starter issues'
-            ],
-            'transmission' => [
-                'value' => 'transmission',
-                'label' => 'Transmission Issues',
-                'icon' => 'Cog',
-                'description' => 'Shifting problems, slipping, leaking fluid'
-            ],
-            'tires' => [
-                'value' => 'tires',
-                'label' => 'Tire & Wheel Problems',
-                'icon' => 'Disc',
-                'description' => 'Uneven wear, vibration, alignment issues'
-            ],
-            'other' => [
-                'value' => 'other',
-                'label' => 'Not Sure / Other',
-                'icon' => 'Search',
-                'description' => 'General issues or unsure about the problem'
-            ],
-        ];
-
         return Inertia::render('Diagnose/Create', [
-            'categories' => array_values($categories),
-            'vehicles' => $vehicles,
-            'auth' => [
-                'user' => auth()->user(),
-            ],
+            'vehicles' => auth()->check()
+                ? auth()->user()->vehicles
+                : [],
         ]);
     }
 
     /**
-     * Store a new diagnosis submission
-     * 
-     * This method handles the form submission, validates the data,
-     * creates a diagnosis record, and returns the diagnosis ID for the results page.
-     * 
-     * @param StoreDiagnosisRequest $request
-     * @return \Illuminate\Http\RedirectResponse
+     * Store a new diagnosis
      */
     public function store(StoreDiagnosisRequest $request)
     {
+        DB::beginTransaction();
+
         try {
-            DB::beginTransaction();
+            $validated = $request->validated();
 
-            // Prepare diagnosis data
-            $diagnosisData = [
-                'category' => $request->category,
-                'user_description' => $request->description,
-                'status' => 'pending',
-            ];
-
-            // Add user_id if authenticated
-            if (auth()->check()) {
-                $diagnosisData['user_id'] = auth()->id();
-            } else {
-                // For guest users, create a session ID for tracking
-                $diagnosisData['session_id'] = session()->getId();
-            }
-
-            // Add vehicle_id if provided
-            if ($request->filled('vehicle_id')) {
-                // Verify the vehicle belongs to the authenticated user
-                if (auth()->check()) {
-                    $vehicle = auth()->user()->vehicles()->find($request->vehicle_id);
-                    if ($vehicle) {
-                        $diagnosisData['vehicle_id'] = $vehicle->id;
-                    }
-                }
-            } else if ($request->filled('vehicle_make') && $request->filled('vehicle_model') && $request->filled('vehicle_year')) {
-                // Create a new vehicle record if details provided
+            // Handle vehicle creation/selection
+            $vehicleId = null;
+            if (isset($validated['vehicle_make']) && isset($validated['vehicle_model'])) {
                 $vehicle = Vehicle::create([
-                    'user_id' => auth()->id() ?? null,
-                    'make' => $request->vehicle_make,
-                    'model' => $request->vehicle_model,
-                    'year' => $request->vehicle_year,
-                    'mileage' => $request->mileage ?? null,
+                    'user_id' => auth()->id(), // NULL for guest users
+                    'make' => $validated['vehicle_make'],
+                    'model' => $validated['vehicle_model'],
+                    'year' => $validated['vehicle_year'] ?? null,
+                    'mileage' => $validated['mileage'] ?? null,
                 ]);
-                $diagnosisData['vehicle_id'] = $vehicle->id;
+                $vehicleId = $vehicle->id;
             }
 
-            // Add voice note URL if provided
-            if ($request->filled('voice_note_url')) {
-                $diagnosisData['voice_note_url'] = $request->voice_note_url;
-            }
+            // Create diagnosis record
+            $diagnosis = Diagnosis::create([
+                'user_id' => auth()->id(), // NULL for guest users
+                'vehicle_id' => $vehicleId,
+                'session_id' => session()->getId(), // For guest tracking
+                'category' => $validated['category'],
+                'user_description' => $validated['description'],
+                'voice_note_url' => $validated['voice_note_url'] ?? null,
+                'status' => 'pending',
+            ]);
 
-            // Create the diagnosis record
-            $diagnosis = Diagnosis::create($diagnosisData);
-
-            // Handle image uploads if provided
-            if ($request->hasFile('images')) {
-                $this->handleImageUploads($request->file('images'), $diagnosis);
+            // Handle image uploads
+            if (isset($validated['images']) && is_array($validated['images'])) {
+                $this->handleImageUploads($validated['images'], $diagnosis);
             }
 
             DB::commit();
 
-            // Redirect to the diagnosis results page
-            // The AI processing will happen on the results page load
-            return redirect()
-                ->route('diagnose.show', $diagnosis)
-                ->with('success', 'Diagnosis submitted successfully! Analyzing your issue...');
+            // Redirect to diagnosis results page (will trigger AI processing)
+            return redirect()->route('diagnose.show', $diagnosis->id)
+                ->with('success', 'Analyzing your issue...');
         } catch (\Exception $e) {
             DB::rollBack();
 
-            // Log the error
             logger()->error('Diagnosis submission failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
@@ -165,24 +89,15 @@ class DiagnosisController extends Controller
      * 
      * This method shows the AI analysis results for a diagnosis.
      * If the diagnosis is still pending, it will trigger the AI analysis.
-     * 
-     * @param Diagnosis $diagnosis
-     * @return Response
      */
     public function show(Diagnosis $diagnosis): Response
     {
         // Authorization check
-        // Allow access if:
-        // 1. User owns the diagnosis, OR
-        // 2. Guest diagnosis with matching session ID, OR
-        // 3. Admin/staff (future enhancement)
         if ($diagnosis->user_id) {
-            // If diagnosis belongs to a user, only that user can view it
             if (!auth()->check() || auth()->id() !== $diagnosis->user_id) {
                 abort(403, 'Unauthorized access to this diagnosis.');
             }
         } else {
-            // Guest diagnosis - check session ID
             if ($diagnosis->session_id !== session()->getId()) {
                 abort(403, 'Unauthorized access to this diagnosis.');
             }
@@ -193,10 +108,37 @@ class DiagnosisController extends Controller
 
         // Check if diagnosis needs AI processing
         if ($diagnosis->status === 'pending') {
-            // In the next task, we'll add AI service integration here
-            // For now, just return the pending status
-            return Inertia::render('Diagnose/Processing', [
+            try {
+                // Process diagnosis with AI service
+                $this->processWithAI($diagnosis);
+
+                // Reload the diagnosis to get updated data
+                $diagnosis->refresh();
+                $diagnosis->load(['vehicle', 'images']);
+            } catch (\Exception $e) {
+                // Log the error
+                logger()->error('AI diagnosis processing failed', [
+                    'diagnosis_id' => $diagnosis->id,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]);
+
+                // Update diagnosis status to failed
+                $diagnosis->update(['status' => 'failed']);
+
+                // Return error page
+                return Inertia::render('Diagnose/Error', [
+                    'diagnosis' => $diagnosis,
+                    'error' => 'Unable to process your diagnosis at this time. Please try again later.',
+                ]);
+            }
+        }
+
+        // If diagnosis failed, show error
+        if ($diagnosis->status === 'failed') {
+            return Inertia::render('Diagnose/Error', [
                 'diagnosis' => $diagnosis,
+                'error' => 'This diagnosis could not be completed. Please submit a new diagnosis.',
             ]);
         }
 
@@ -208,58 +150,96 @@ class DiagnosisController extends Controller
     }
 
     /**
-     * Handle image uploads for a diagnosis
+     * Process diagnosis with AI service
      * 
-     * @param array $images
      * @param Diagnosis $diagnosis
      * @return void
+     * @throws \Exception
+     */
+    private function processWithAI(Diagnosis $diagnosis): void
+    {
+        $startTime = microtime(true);
+
+        try {
+            // Get AI service from container
+            $aiService = app(\App\Services\AI\AIServiceInterface::class);
+
+            // Prepare data for AI analysis
+            $data = [
+                'category' => $diagnosis->category,
+                'description' => $diagnosis->user_description,
+                'vehicle_make' => $diagnosis->vehicle?->make,
+                'vehicle_model' => $diagnosis->vehicle?->model,
+                'vehicle_year' => $diagnosis->vehicle?->year,
+                'mileage' => $diagnosis->vehicle?->mileage,
+                'images' => $diagnosis->images->pluck('image_path')->toArray(),
+            ];
+
+            // Call AI service
+            $result = $aiService->diagnose($data);
+
+            // Calculate processing time
+            $processingTime = (int) round(microtime(true) - $startTime);
+
+            // Update diagnosis with AI results
+            $diagnosis->update([
+                'ai_provider' => $result->aiProvider,
+                'identified_issue' => $result->identifiedIssue,
+                'confidence_score' => $result->confidenceScore,
+                'explanation' => $result->explanation,
+                'diy_steps' => $result->diySteps,
+                'safety_warnings' => $result->safetyWarnings,
+                'estimated_cost_min' => $result->estimatedCostMin,
+                'estimated_cost_max' => $result->estimatedCostMax,
+                'urgency_level' => $result->urgencyLevel,
+                'safe_to_drive' => $result->safeToDrive,
+                'processing_time_seconds' => $processingTime,
+                'status' => 'completed',
+            ]);
+
+            // Log successful processing
+            logger()->info('AI diagnosis completed', [
+                'diagnosis_id' => $diagnosis->id,
+                'provider' => $result->aiProvider,
+                'issue' => $result->identifiedIssue,
+                'confidence' => $result->confidenceScore,
+                'processing_time' => $processingTime,
+            ]);
+        } catch (\Exception $e) {
+            // Update diagnosis status to failed
+            $diagnosis->update(['status' => 'failed']);
+
+            // Re-throw exception to be caught by show method
+            throw $e;
+        }
+    }
+
+    /**
+     * Handle image uploads for a diagnosis
      */
     private function handleImageUploads(array $images, Diagnosis $diagnosis): void
     {
         foreach ($images as $index => $image) {
-            // Validate image
             if (!$image->isValid()) {
                 continue;
             }
 
-            // Generate unique filename
             $filename = Str::uuid() . '.' . $image->getClientOriginalExtension();
+            $path = "diagnoses/{$diagnosis->id}/{$filename}";
 
-            // Store in storage/app/public/diagnoses/{diagnosis_id}
-            $path = $image->storeAs(
-                "diagnoses/{$diagnosis->id}",
-                $filename,
-                'public'
-            );
+            // Store image
+            Storage::disk('public')->put($path, file_get_contents($image));
+            $url = Storage::disk('public')->url($path);
 
-            // Create diagnosis image record
-            $diagnosis->images()->create([
-                'image_url' => asset('storage/' . $path),
+            // Create database record
+            DiagnosisImage::create([
+                'diagnosis_id' => $diagnosis->id,
+                'image_url' => $url,
                 'image_path' => $path,
                 'file_size' => $image->getSize(),
                 'mime_type' => $image->getMimeType(),
                 'order_index' => $index,
             ]);
         }
-    }
-
-    /**
-     * Mark diagnosis as helpful or not helpful
-     * 
-     * @param Request $request
-     * @param Diagnosis $diagnosis
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function feedback(Request $request, Diagnosis $diagnosis)
-    {
-        $request->validate([
-            'feedback' => 'required|in:helpful,not_helpful',
-        ]);
-
-        $diagnosis->update([
-            'user_feedback' => $request->feedback,
-        ]);
-
-        return back()->with('success', 'Thank you for your feedback!');
     }
 }
