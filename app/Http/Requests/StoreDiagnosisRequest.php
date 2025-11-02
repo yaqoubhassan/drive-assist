@@ -33,7 +33,7 @@ class StoreDiagnosisRequest extends FormRequest
                 'required',
                 'string',
                 'min:20',
-                'max:500',
+                'max:700',
             ],
 
             // Optional image uploads
@@ -52,7 +52,7 @@ class StoreDiagnosisRequest extends FormRequest
             'voice_note_url' => [
                 'nullable',
                 'url',
-                'max:500',
+                'max:700',
             ],
 
             // Optional vehicle information
@@ -103,7 +103,7 @@ class StoreDiagnosisRequest extends FormRequest
             // Description messages
             'description.required' => 'Please describe your vehicle issue.',
             'description.min' => 'Please provide at least 20 characters to help us understand the issue better.',
-            'description.max' => 'Description is too long. Please keep it under 500 characters.',
+            'description.max' => 'Description is too long. Please keep it under 700 characters.',
 
             // Image messages
             'images.max' => 'You can upload a maximum of 5 images.',
