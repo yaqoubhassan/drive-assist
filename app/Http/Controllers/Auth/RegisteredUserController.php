@@ -88,20 +88,9 @@ class RegisteredUserController extends Controller
                     'profile_completed' => false,
                     'verification_status' => 'pending',
                 ]);
-
-                Log::info('Expert profile created during registration', [
-                    'user_id' => $user->id,
-                    'email' => $user->email,
-                ]);
             }
 
             DB::commit();
-
-            Log::info('User registered successfully', [
-                'user_id' => $user->id,
-                'user_type' => $user->user_type,
-                'email' => $user->email,
-            ]);
 
             // Fire the Registered event to send verification email
             event(new Registered($user));
@@ -115,13 +104,6 @@ class RegisteredUserController extends Controller
                 ->with('success', 'Registration successful! Please verify your email to continue.');
         } catch (\Exception $e) {
             DB::rollBack();
-
-            Log::error('Registration failed', [
-                'email' => $request->email,
-                'user_type' => $request->user_type,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
 
             return back()
                 ->withErrors(['error' => 'An error occurred during registration. Please try again.'])

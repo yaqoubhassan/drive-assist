@@ -112,12 +112,6 @@ class ExpertKycController extends Controller
 
             DB::commit();
 
-            Log::info('KYC progress saved', [
-                'expert_id' => $expertProfile->id,
-                'current_step' => $validated['current_step'],
-                'completion' => $kyc->completion_percentage,
-            ]);
-
             return response()->json([
                 'success' => true,
                 'message' => 'Progress saved successfully',
@@ -125,11 +119,6 @@ class ExpertKycController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-
-            Log::error('Failed to save KYC progress', [
-                'expert_id' => $expertProfile->id,
-                'error' => $e->getMessage(),
-            ]);
 
             return response()->json([
                 'success' => false,
@@ -192,12 +181,6 @@ class ExpertKycController extends Controller
 
             DB::commit();
 
-            Log::info('KYC document uploaded', [
-                'expert_id' => $expertProfile->id,
-                'document_type' => $documentType,
-                'path' => $path,
-            ]);
-
             return response()->json([
                 'success' => true,
                 'message' => 'Document uploaded successfully',
@@ -207,12 +190,6 @@ class ExpertKycController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-
-            Log::error('Failed to upload KYC document', [
-                'expert_id' => $expertProfile->id,
-                'document_type' => $validated['document_type'],
-                'error' => $e->getMessage(),
-            ]);
 
             return response()->json([
                 'success' => false,
@@ -255,11 +232,6 @@ class ExpertKycController extends Controller
 
             DB::commit();
 
-            Log::info('KYC submitted for review', [
-                'expert_id' => $expertProfile->id,
-                'kyc_id' => $kyc->id,
-            ]);
-
             // TODO: Send notification to admin
             // TODO: Send confirmation email to expert
 
@@ -268,11 +240,6 @@ class ExpertKycController extends Controller
                 ->with('success', 'KYC submitted successfully! Our team will review your information within 24-48 hours.');
         } catch (\Exception $e) {
             DB::rollBack();
-
-            Log::error('Failed to submit KYC', [
-                'expert_id' => $expertProfile->id,
-                'error' => $e->getMessage(),
-            ]);
 
             return back()->withErrors([
                 'submission' => 'Failed to submit KYC. Please try again.',

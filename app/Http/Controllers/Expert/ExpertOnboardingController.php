@@ -103,10 +103,6 @@ class ExpertOnboardingController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Expert onboarding error', [
-                'user_id' => $user->id,
-                'error' => $e->getMessage(),
-            ]);
 
             return redirect()->route('home')
                 ->with('error', 'Unable to load onboarding. Please contact support.');
@@ -238,22 +234,11 @@ class ExpertOnboardingController extends Controller
 
             DB::commit();
 
-            Log::info('Expert profile progress auto-saved', [
-                'user_id' => $user->id,
-                'profile_id' => $expertProfile->id,
-                'current_step' => $validated['current_step'],
-            ]);
-
             // ✅ NO LOGOUT - Just return success
             // User stays logged in and can continue onboarding
             return back()->with('success', 'Progress saved automatically.');
         } catch (\Exception $e) {
             DB::rollBack();
-
-            Log::error('Failed to auto-save expert profile progress', [
-                'user_id' => $user->id,
-                'error' => $e->getMessage(),
-            ]);
 
             return back()
                 ->withInput()
@@ -388,12 +373,6 @@ class ExpertOnboardingController extends Controller
 
             DB::commit();
 
-            Log::info('Expert profile saved with logout', [
-                'user_id' => $user->id,
-                'profile_id' => $expertProfile->id,
-                'current_step' => $validated['current_step'],
-            ]);
-
             // ✅ NOW logout (only for "Save & Exit")
             Auth::logout();
             $request->session()->invalidate();
@@ -403,11 +382,6 @@ class ExpertOnboardingController extends Controller
                 ->with('success', 'Progress saved! Log in anytime to continue where you left off.');
         } catch (\Exception $e) {
             DB::rollBack();
-
-            Log::error('Failed to save expert profile with logout', [
-                'user_id' => $user->id,
-                'error' => $e->getMessage(),
-            ]);
 
             return back()
                 ->withInput()
@@ -523,11 +497,6 @@ class ExpertOnboardingController extends Controller
 
             DB::commit();
 
-            Log::info('Expert onboarding completed', [
-                'user_id' => $user->id,
-                'profile_id' => $expertProfile->id,
-            ]);
-
             // TODO: Send email to admin for verification
             // TODO: Send confirmation email to expert
 
@@ -535,12 +504,6 @@ class ExpertOnboardingController extends Controller
                 ->with('success', 'Profile completed! We\'ll review your information and notify you within 24-48 hours.');
         } catch (\Exception $e) {
             DB::rollBack();
-
-            Log::error('Failed to complete expert onboarding', [
-                'user_id' => $user->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
 
             return back()
                 ->withInput()

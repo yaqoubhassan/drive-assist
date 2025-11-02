@@ -554,31 +554,13 @@ class ExpertDashboardController extends Controller
 
             DB::commit();
 
-            Log::info('Expert profile updated successfully', [
-                'user_id' => $user->id,
-                'profile_id' => $expertProfile->id,
-                'updated_fields' => array_keys($validated),
-            ]);
-
             return back()->with('success', 'Profile updated successfully.');
         } catch (\Illuminate\Validation\ValidationException $e) {
             DB::rollBack();
 
-            Log::warning('Expert profile validation failed', [
-                'user_id' => $user->id,
-                'errors' => $e->errors(),
-                'input_data' => $request->all(),
-            ]);
-
             throw $e;
         } catch (\Exception $e) {
             DB::rollBack();
-
-            Log::error('Failed to update expert profile', [
-                'user_id' => $user->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
 
             return back()->withErrors(['error' => 'Failed to update profile. Please try again.']);
         }
@@ -611,11 +593,6 @@ class ExpertDashboardController extends Controller
                 'avatar_url' => $result['url'],
             ]);
 
-            Log::info('Avatar uploaded successfully', [
-                'user_id' => $user->id,
-                'path' => $result['path'],
-            ]);
-
             return response()->json([
                 'success' => true,
                 'message' => 'Avatar uploaded successfully',
@@ -627,11 +604,6 @@ class ExpertDashboardController extends Controller
                 'error' => $e->validator->errors()->first(),
             ], 422);
         } catch (\Exception $e) {
-            Log::error('Failed to upload avatar', [
-                'user_id' => $user->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
 
             return response()->json([
                 'success' => false,
@@ -666,20 +638,11 @@ class ExpertDashboardController extends Controller
                 'avatar_url' => null,
             ]);
 
-            Log::info('Avatar deleted successfully', [
-                'user_id' => $user->id,
-            ]);
-
             return response()->json([
                 'success' => true,
                 'message' => 'Avatar deleted successfully',
             ]);
         } catch (\Exception $e) {
-            Log::error('Failed to delete avatar', [
-                'user_id' => $user->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
 
             return response()->json([
                 'success' => false,
