@@ -346,6 +346,384 @@
                     }
                 ]
             }
+        },
+        "/diagnosis/vehicles": {
+            "get": {
+                "tags": [
+                    "Diagnosis"
+                ],
+                "summary": "Get user's vehicles",
+                "description": "Retrieve list of vehicles owned by the authenticated user for diagnosis form",
+                "operationId": "1542cecae0be1ecbd9e9f95df779ed89",
+                "responses": {
+                    "200": {
+                        "description": "Vehicles retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Vehicles retrieved successfully"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "500": {
+                        "description": "Server error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/diagnosis": {
+            "get": {
+                "tags": [
+                    "Diagnosis"
+                ],
+                "summary": "Get diagnosis history",
+                "description": "Retrieve paginated list of user's diagnosis history",
+                "operationId": "7a7662910ef7003789e722b5854bf641",
+                "parameters": [
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Number of items per page",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 15
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Diagnoses retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Diagnoses retrieved successfully"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "pagination": {
+                                            "properties": {
+                                                "total": {
+                                                    "type": "integer",
+                                                    "example": 100
+                                                },
+                                                "per_page": {
+                                                    "type": "integer",
+                                                    "example": 15
+                                                },
+                                                "current_page": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "last_page": {
+                                                    "type": "integer",
+                                                    "example": 7
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "500": {
+                        "description": "Server error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Diagnosis"
+                ],
+                "summary": "Submit a new diagnosis",
+                "description": "Submit a car issue for AI-powered diagnosis with optional image uploads",
+                "operationId": "412d8bc5772f57a730b22abb21c97228",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "category",
+                                    "description",
+                                    "vehicle_make",
+                                    "vehicle_model"
+                                ],
+                                "properties": {
+                                    "category": {
+                                        "type": "string",
+                                        "enum": [
+                                            "engine",
+                                            "brakes",
+                                            "electrical",
+                                            "transmission",
+                                            "tires",
+                                            "suspension",
+                                            "cooling",
+                                            "fuel",
+                                            "exhaust",
+                                            "steering"
+                                        ],
+                                        "example": "engine"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "example": "Car is making a knocking sound when accelerating"
+                                    },
+                                    "vehicle_make": {
+                                        "type": "string",
+                                        "example": "Toyota"
+                                    },
+                                    "vehicle_model": {
+                                        "type": "string",
+                                        "example": "Camry"
+                                    },
+                                    "vehicle_year": {
+                                        "type": "integer",
+                                        "example": 2018
+                                    },
+                                    "mileage": {
+                                        "type": "integer",
+                                        "example": 50000
+                                    },
+                                    "voice_note_url": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "images[]": {
+                                        "description": "Upload up to 5 images (max 5MB each)",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "format": "binary"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Diagnosis submitted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Diagnosis submitted successfully. Processing..."
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    },
+                    "500": {
+                        "description": "Server error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/diagnosis/{id}": {
+            "get": {
+                "tags": [
+                    "Diagnosis"
+                ],
+                "summary": "Get specific diagnosis",
+                "description": "Retrieve detailed diagnosis with AI analysis results",
+                "operationId": "87ed2c464d472272f2d61236d110a283",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Diagnosis ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Diagnosis retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Diagnosis retrieved successfully"
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden - not your diagnosis"
+                    },
+                    "404": {
+                        "description": "Diagnosis not found"
+                    },
+                    "422": {
+                        "description": "Diagnosis processing failed"
+                    },
+                    "500": {
+                        "description": "Server error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Diagnosis"
+                ],
+                "summary": "Delete diagnosis",
+                "description": "Delete a diagnosis and its associated images",
+                "operationId": "de881e3169fa573cb3704df70abdd691",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Diagnosis ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Diagnosis deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Diagnosis deleted successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden - not your diagnosis"
+                    },
+                    "404": {
+                        "description": "Diagnosis not found"
+                    },
+                    "500": {
+                        "description": "Server error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
         }
     },
     "components": {
@@ -362,6 +740,10 @@
         {
             "name": "Authentication",
             "description": "User authentication and token management"
+        },
+        {
+            "name": "Diagnosis",
+            "description": "AI-powered car diagnosis endpoints"
         }
     ]
 }

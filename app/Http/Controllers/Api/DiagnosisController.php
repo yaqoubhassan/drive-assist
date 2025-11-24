@@ -17,10 +17,24 @@ use Illuminate\Validation\ValidationException;
 class DiagnosisController extends ApiController
 {
     /**
-     * Get vehicles for diagnosis form.
-     *
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Get(
+     *     path="/diagnosis/vehicles",
+     *     summary="Get user's vehicles",
+     *     description="Retrieve list of vehicles owned by the authenticated user for diagnosis form",
+     *     tags={"Diagnosis"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Vehicles retrieved successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Vehicles retrieved successfully"),
+     *             @OA\Property(property="data", type="array", @OA\Items(type="object"))
+     *         )
+     *     ),
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=500, description="Server error")
+     * )
      */
     public function getVehicles(Request $request)
     {
@@ -37,10 +51,42 @@ class DiagnosisController extends ApiController
     }
 
     /**
-     * Store a new diagnosis.
-     *
-     * @param StoreDiagnosisRequest $request
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Post(
+     *     path="/diagnosis",
+     *     summary="Submit a new diagnosis",
+     *     description="Submit a car issue for AI-powered diagnosis with optional image uploads",
+     *     tags={"Diagnosis"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\MediaType(
+     *             mediaType="multipart/form-data",
+     *             @OA\Schema(
+     *                 required={"category","description","vehicle_make","vehicle_model"},
+     *                 @OA\Property(property="category", type="string", enum={"engine","brakes","electrical","transmission","tires","suspension","cooling","fuel","exhaust","steering"}, example="engine"),
+     *                 @OA\Property(property="description", type="string", example="Car is making a knocking sound when accelerating"),
+     *                 @OA\Property(property="vehicle_make", type="string", example="Toyota"),
+     *                 @OA\Property(property="vehicle_model", type="string", example="Camry"),
+     *                 @OA\Property(property="vehicle_year", type="integer", example=2018),
+     *                 @OA\Property(property="mileage", type="integer", example=50000),
+     *                 @OA\Property(property="voice_note_url", type="string", nullable=true),
+     *                 @OA\Property(property="images[]", type="array", @OA\Items(type="string", format="binary"), description="Upload up to 5 images (max 5MB each)")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=201,
+     *         description="Diagnosis submitted successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Diagnosis submitted successfully. Processing..."),
+     *             @OA\Property(property="data", type="object")
+     *         )
+     *     ),
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=422, description="Validation error"),
+     *     @OA\Response(response=500, description="Server error")
+     * )
      */
     public function store(StoreDiagnosisRequest $request)
     {
@@ -102,11 +148,34 @@ class DiagnosisController extends ApiController
     }
 
     /**
-     * Get a specific diagnosis with AI results.
-     *
-     * @param Request $request
-     * @param Diagnosis $diagnosis
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Get(
+     *     path="/diagnosis/{id}",
+     *     summary="Get specific diagnosis",
+     *     description="Retrieve detailed diagnosis with AI analysis results",
+     *     tags={"Diagnosis"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="Diagnosis ID",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Diagnosis retrieved successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Diagnosis retrieved successfully"),
+     *             @OA\Property(property="data", type="object")
+     *         )
+     *     ),
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=403, description="Forbidden - not your diagnosis"),
+     *     @OA\Response(response=404, description="Diagnosis not found"),
+     *     @OA\Response(response=422, description="Diagnosis processing failed"),
+     *     @OA\Response(response=500, description="Server error")
+     * )
      */
     public function show(Request $request, Diagnosis $diagnosis)
     {
@@ -152,10 +221,46 @@ class DiagnosisController extends ApiController
     }
 
     /**
-     * Get user's diagnosis history.
-     *
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Get(
+     *     path="/diagnosis",
+     *     summary="Get diagnosis history",
+     *     description="Retrieve paginated list of user's diagnosis history",
+     *     tags={"Diagnosis"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="per_page",
+     *         in="query",
+     *         description="Number of items per page",
+     *         required=false,
+     *         @OA\Schema(type="integer", default=15)
+     *     ),
+     *     @OA\Parameter(
+     *         name="page",
+     *         in="query",
+     *         description="Page number",
+     *         required=false,
+     *         @OA\Schema(type="integer", default=1)
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Diagnoses retrieved successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Diagnoses retrieved successfully"),
+     *             @OA\Property(property="data", type="array", @OA\Items(type="object")),
+     *             @OA\Property(
+     *                 property="pagination",
+     *                 type="object",
+     *                 @OA\Property(property="total", type="integer", example=100),
+     *                 @OA\Property(property="per_page", type="integer", example=15),
+     *                 @OA\Property(property="current_page", type="integer", example=1),
+     *                 @OA\Property(property="last_page", type="integer", example=7)
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=500, description="Server error")
+     * )
      */
     public function index(Request $request)
     {
@@ -183,11 +288,32 @@ class DiagnosisController extends ApiController
     }
 
     /**
-     * Delete a diagnosis.
-     *
-     * @param Request $request
-     * @param Diagnosis $diagnosis
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Delete(
+     *     path="/diagnosis/{id}",
+     *     summary="Delete diagnosis",
+     *     description="Delete a diagnosis and its associated images",
+     *     tags={"Diagnosis"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="Diagnosis ID",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Diagnosis deleted successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Diagnosis deleted successfully")
+     *         )
+     *     ),
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=403, description="Forbidden - not your diagnosis"),
+     *     @OA\Response(response=404, description="Diagnosis not found"),
+     *     @OA\Response(response=500, description="Server error")
+     * )
      */
     public function destroy(Request $request, Diagnosis $diagnosis)
     {
