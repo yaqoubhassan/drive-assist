@@ -1,0 +1,920 @@
+{
+	"info": {
+		"_postman_id": "drive-assist-api-v1",
+		"name": "Drive Assist API v1",
+		"description": "Complete API collection for Drive Assist - AI-powered car diagnostic and expert matching platform",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{auth_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost/api/v1",
+			"type": "string"
+		},
+		{
+			"key": "auth_token",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Register",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set(\"auth_token\", jsonData.data.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"John Doe\",\n    \"email\": \"john@example.com\",\n    \"password\": \"password123\",\n    \"password_confirmation\": \"password123\",\n    \"user_type\": \"driver\",\n    \"phone\": \"+1234567890\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/register",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "register"]
+						},
+						"description": "Register a new user account (driver or expert)"
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set(\"auth_token\", jsonData.data.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"john@example.com\",\n    \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "login"]
+						},
+						"description": "Login and get authentication token"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Current User",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/auth/user",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "user"]
+						},
+						"description": "Get authenticated user information"
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set(\"auth_token\", jsonData.data.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/auth/refresh-token",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "refresh-token"]
+						},
+						"description": "Refresh authentication token"
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/auth/logout",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "logout"]
+						},
+						"description": "Logout and revoke token"
+					},
+					"response": []
+				}
+			],
+			"description": "Authentication and user management endpoints"
+		},
+		{
+			"name": "Diagnosis",
+			"item": [
+				{
+					"name": "Get Vehicles",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/diagnosis/vehicles",
+							"host": ["{{base_url}}"],
+							"path": ["diagnosis", "vehicles"]
+						},
+						"description": "Get user's vehicles for diagnosis form"
+					},
+					"response": []
+				},
+				{
+					"name": "Submit Diagnosis",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "multipart/form-data",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "category",
+									"value": "engine",
+									"type": "text"
+								},
+								{
+									"key": "description",
+									"value": "Car is making a knocking sound when accelerating",
+									"type": "text"
+								},
+								{
+									"key": "vehicle_make",
+									"value": "Toyota",
+									"type": "text"
+								},
+								{
+									"key": "vehicle_model",
+									"value": "Camry",
+									"type": "text"
+								},
+								{
+									"key": "vehicle_year",
+									"value": "2018",
+									"type": "text"
+								},
+								{
+									"key": "mileage",
+									"value": "50000",
+									"type": "text"
+								},
+								{
+									"key": "images[]",
+									"type": "file",
+									"src": [],
+									"disabled": true
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/diagnosis",
+							"host": ["{{base_url}}"],
+							"path": ["diagnosis"]
+						},
+						"description": "Submit a new diagnosis for AI analysis"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Diagnosis History",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/diagnosis?per_page=15&page=1",
+							"host": ["{{base_url}}"],
+							"path": ["diagnosis"],
+							"query": [
+								{
+									"key": "per_page",
+									"value": "15"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Get user's diagnosis history with pagination"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Specific Diagnosis",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/diagnosis/:id",
+							"host": ["{{base_url}}"],
+							"path": ["diagnosis", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Get detailed diagnosis with AI results"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Diagnosis",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/diagnosis/:id",
+							"host": ["{{base_url}}"],
+							"path": ["diagnosis", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Delete a diagnosis"
+					},
+					"response": []
+				}
+			],
+			"description": "AI-powered car diagnosis endpoints"
+		},
+		{
+			"name": "Driver",
+			"item": [
+				{
+					"name": "Get Dashboard",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/driver/dashboard",
+							"host": ["{{base_url}}"],
+							"path": ["driver", "dashboard"]
+						},
+						"description": "Get driver dashboard data"
+					},
+					"response": []
+				},
+				{
+					"name": "Vehicles",
+					"item": [
+						{
+							"name": "Get Vehicles",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/driver/vehicles",
+									"host": ["{{base_url}}"],
+									"path": ["driver", "vehicles"]
+								},
+								"description": "Get all user vehicles"
+							},
+							"response": []
+						},
+						{
+							"name": "Create Vehicle",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"make\": \"Toyota\",\n    \"model\": \"Camry\",\n    \"year\": 2018,\n    \"vin\": \"ABC123XYZ\",\n    \"mileage\": 50000,\n    \"fuel_type\": \"gasoline\",\n    \"transmission_type\": \"automatic\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/driver/vehicles",
+									"host": ["{{base_url}}"],
+									"path": ["driver", "vehicles"]
+								},
+								"description": "Add a new vehicle"
+							},
+							"response": []
+						},
+						{
+							"name": "Update Vehicle",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"mileage\": 55000\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/driver/vehicles/:id",
+									"host": ["{{base_url}}"],
+									"path": ["driver", "vehicles", ":id"],
+									"variable": [
+										{
+											"key": "id",
+											"value": "1"
+										}
+									]
+								},
+								"description": "Update vehicle information"
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Vehicle",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/driver/vehicles/:id",
+									"host": ["{{base_url}}"],
+									"path": ["driver", "vehicles", ":id"],
+									"variable": [
+										{
+											"key": "id",
+											"value": "1"
+										}
+									]
+								},
+								"description": "Delete a vehicle"
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Favorites",
+					"item": [
+						{
+							"name": "Get Favorites",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/driver/favorites?per_page=12",
+									"host": ["{{base_url}}"],
+									"path": ["driver", "favorites"],
+									"query": [
+										{
+											"key": "per_page",
+											"value": "12"
+										}
+									]
+								},
+								"description": "Get favorite experts"
+							},
+							"response": []
+						},
+						{
+							"name": "Toggle Favorite",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/driver/favorites/:expert_id/toggle",
+									"host": ["{{base_url}}"],
+									"path": ["driver", "favorites", ":expert_id", "toggle"],
+									"variable": [
+										{
+											"key": "expert_id",
+											"value": "1"
+										}
+									]
+								},
+								"description": "Add or remove expert from favorites"
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Maintenance Reminders",
+					"item": [
+						{
+							"name": "Get Reminders",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/driver/reminders?status=pending&per_page=15",
+									"host": ["{{base_url}}"],
+									"path": ["driver", "reminders"],
+									"query": [
+										{
+											"key": "status",
+											"value": "pending"
+										},
+										{
+											"key": "per_page",
+											"value": "15"
+										}
+									]
+								},
+								"description": "Get maintenance reminders"
+							},
+							"response": []
+						},
+						{
+							"name": "Create Reminder",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"vehicle_id\": 1,\n    \"reminder_type\": \"oil_change\",\n    \"due_date\": \"2024-12-31\",\n    \"due_mileage\": 60000,\n    \"description\": \"Regular oil change\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/driver/reminders",
+									"host": ["{{base_url}}"],
+									"path": ["driver", "reminders"]
+								},
+								"description": "Create a maintenance reminder"
+							},
+							"response": []
+						},
+						{
+							"name": "Complete Reminder",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/driver/reminders/:id/complete",
+									"host": ["{{base_url}}"],
+									"path": ["driver", "reminders", ":id", "complete"],
+									"variable": [
+										{
+											"key": "id",
+											"value": "1"
+										}
+									]
+								},
+								"description": "Mark reminder as completed"
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Reminder",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/driver/reminders/:id",
+									"host": ["{{base_url}}"],
+									"path": ["driver", "reminders", ":id"],
+									"variable": [
+										{
+											"key": "id",
+											"value": "1"
+										}
+									]
+								},
+								"description": "Delete a reminder"
+							},
+							"response": []
+						}
+					]
+				}
+			],
+			"description": "Driver-specific endpoints (requires driver role)"
+		},
+		{
+			"name": "Expert",
+			"item": [
+				{
+					"name": "Public",
+					"item": [
+						{
+							"name": "Get All Experts",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/experts?latitude=40.7128&longitude=-74.0060&radius=25&specialty=engine&min_rating=4&open_now=true&per_page=12",
+									"host": ["{{base_url}}"],
+									"path": ["experts"],
+									"query": [
+										{
+											"key": "latitude",
+											"value": "40.7128"
+										},
+										{
+											"key": "longitude",
+											"value": "-74.0060"
+										},
+										{
+											"key": "radius",
+											"value": "25"
+										},
+										{
+											"key": "specialty",
+											"value": "engine"
+										},
+										{
+											"key": "min_rating",
+											"value": "4"
+										},
+										{
+											"key": "open_now",
+											"value": "true"
+										},
+										{
+											"key": "per_page",
+											"value": "12"
+										}
+									]
+								},
+								"description": "Get list of verified experts with filters"
+							},
+							"response": []
+						},
+						{
+							"name": "Get Expert Details",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/experts/:id",
+									"host": ["{{base_url}}"],
+									"path": ["experts", ":id"],
+									"variable": [
+										{
+											"key": "id",
+											"value": "1"
+										}
+									]
+								},
+								"description": "Get detailed expert information"
+							},
+							"response": []
+						},
+						{
+							"name": "Contact Expert",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"diagnosis_id\": 1,\n    \"driver_name\": \"John Doe\",\n    \"driver_email\": \"john@example.com\",\n    \"driver_phone\": \"+1234567890\",\n    \"message\": \"I need help with my car issue\",\n    \"preferred_contact_method\": \"phone\",\n    \"best_time_to_contact\": \"Morning\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/experts/:id/contact",
+									"host": ["{{base_url}}"],
+									"path": ["experts", ":id", "contact"],
+									"variable": [
+										{
+											"key": "id",
+											"value": "1"
+										}
+									]
+								},
+								"description": "Send message to expert (create lead)"
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Get Dashboard",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/expert/dashboard",
+							"host": ["{{base_url}}"],
+							"path": ["expert", "dashboard"]
+						},
+						"description": "Get expert dashboard data"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Profile",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"business_name\": \"Joe's Auto Shop\",\n    \"business_type\": \"mechanic\",\n    \"bio\": \"Professional mechanic with 10 years of experience\",\n    \"years_experience\": 10,\n    \"hourly_rate_min\": 75,\n    \"hourly_rate_max\": 150,\n    \"accepts_emergency\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/expert/profile",
+							"host": ["{{base_url}}"],
+							"path": ["expert", "profile"]
+						},
+						"description": "Update expert profile information"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Leads",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/expert/leads?status=new&per_page=15",
+							"host": ["{{base_url}}"],
+							"path": ["expert", "leads"],
+							"query": [
+								{
+									"key": "status",
+									"value": "new"
+								},
+								{
+									"key": "per_page",
+									"value": "15"
+								}
+							]
+						},
+						"description": "Get expert leads with filters"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Reviews",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/expert/reviews?per_page=15",
+							"host": ["{{base_url}}"],
+							"path": ["expert", "reviews"],
+							"query": [
+								{
+									"key": "per_page",
+									"value": "15"
+								}
+							]
+						},
+						"description": "Get expert reviews"
+					},
+					"response": []
+				}
+			],
+			"description": "Expert-specific endpoints (requires expert role)"
+		},
+		{
+			"name": "Resources",
+			"item": [
+				{
+					"name": "Car Issues",
+					"item": [
+						{
+							"name": "Get Car Issues",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/resources/car-issues?search=engine&category=engine&severity=high&sort=popular&per_page=12",
+									"host": ["{{base_url}}"],
+									"path": ["resources", "car-issues"],
+									"query": [
+										{
+											"key": "search",
+											"value": "engine"
+										},
+										{
+											"key": "category",
+											"value": "engine"
+										},
+										{
+											"key": "severity",
+											"value": "high"
+										},
+										{
+											"key": "sort",
+											"value": "popular"
+										},
+										{
+											"key": "per_page",
+											"value": "12"
+										}
+									]
+								},
+								"description": "Get car issues with filters and search"
+							},
+							"response": []
+						},
+						{
+							"name": "Get Car Issue Details",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/resources/car-issues/:slug",
+									"host": ["{{base_url}}"],
+									"path": ["resources", "car-issues", ":slug"],
+									"variable": [
+										{
+											"key": "slug",
+											"value": "engine-overheating"
+										}
+									]
+								},
+								"description": "Get detailed car issue information"
+							},
+							"response": []
+						},
+						{
+							"name": "Mark as Helpful",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"helpful\": true\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/resources/car-issues/:id/helpful",
+									"host": ["{{base_url}}"],
+									"path": ["resources", "car-issues", ":id", "helpful"],
+									"variable": [
+										{
+											"key": "id",
+											"value": "1"
+										}
+									]
+								},
+								"description": "Mark car issue as helpful or not helpful"
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Road Signs",
+					"item": [
+						{
+							"name": "Get Road Signs",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/resources/road-signs?search=stop&category=regulatory&sort=popular&per_page=12",
+									"host": ["{{base_url}}"],
+									"path": ["resources", "road-signs"],
+									"query": [
+										{
+											"key": "search",
+											"value": "stop"
+										},
+										{
+											"key": "category",
+											"value": "regulatory"
+										},
+										{
+											"key": "sort",
+											"value": "popular"
+										},
+										{
+											"key": "per_page",
+											"value": "12"
+										}
+									]
+								},
+								"description": "Get road signs with filters and search"
+							},
+							"response": []
+						},
+						{
+							"name": "Get Road Sign Details",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/resources/road-signs/:slug",
+									"host": ["{{base_url}}"],
+									"path": ["resources", "road-signs", ":slug"],
+									"variable": [
+										{
+											"key": "slug",
+											"value": "stop-sign"
+										}
+									]
+								},
+								"description": "Get detailed road sign information"
+							},
+							"response": []
+						}
+					]
+				}
+			],
+			"description": "Educational resources (public endpoints)"
+		}
+	]
+}
